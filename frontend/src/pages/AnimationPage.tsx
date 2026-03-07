@@ -6,15 +6,6 @@ import { Prose } from '../components/InlineCode'
 
 const TOTAL = animations.length
 
-const conceptImages: Record<number, string> = {
-  0: '/images/asyncio/01-sync-execution.png',
-  1: '/images/asyncio/02-basic-coroutines.png',
-  2: '/images/asyncio/03-create-task.png',
-  4: '/images/asyncio/05-blocking-loop.png',
-  5: '/images/asyncio/06-threads-processes.png',
-  6: '/images/asyncio/07-scheduling-patterns.png',
-}
-
 function SectionHeading({ children, color = 'text-blue-400' }: { children: React.ReactNode; color?: string }) {
   return (
     <h2 className={`text-xl font-semibold ${color}`}>
@@ -98,17 +89,6 @@ export function AnimationPage() {
         <SectionHeading color="text-cyan-400">When to Use This Pattern</SectionHeading>
         <BulletList items={article.before.whenToUse} />
       </section>
-
-      {/* Concept illustration */}
-      {conceptImages[index] && (
-        <div className="mb-10 overflow-hidden rounded-xl border border-gray-800">
-          <img
-            src={conceptImages[index]}
-            alt={animation.title}
-            className="w-full object-cover"
-          />
-        </div>
-      )}
 
       {/* Stepper hint */}
       <div className="mb-6">

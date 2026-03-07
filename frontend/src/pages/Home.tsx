@@ -16,11 +16,6 @@ export function Home() {
             to="/articles/python-asyncio"
             className="group block overflow-hidden rounded-lg border border-gray-800 transition-colors hover:border-gray-600 hover:bg-gray-900"
           >
-            <img
-              src="/images/asyncio/03-create-task.png"
-              alt="Python Asyncio"
-              className="w-full h-48 object-cover object-center opacity-80 transition-opacity group-hover:opacity-100"
-            />
             <div className="p-5">
               <span className="text-sm font-medium text-blue-400">Python</span>
               <h2 className="mt-1 text-xl font-semibold text-white">
