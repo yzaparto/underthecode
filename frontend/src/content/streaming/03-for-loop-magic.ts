@@ -107,7 +107,7 @@ const forLoopMagic: AnimationDefinition = {
       { action: 'addCard', columnId: 'viz', id: 'auto', title: '✨ for loop handles everything!', statusId: 'receiving' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-16' },
+      { action: 'highlightLine', lineId: 'line-15' },
       { action: 'setStatus', cardId: 'gen2', statusId: 'running' },
       { action: 'setGlow', cardId: 'gen2', glow: true },
     ],
@@ -119,17 +119,21 @@ const forLoopMagic: AnimationDefinition = {
       { action: 'addCard', columnId: 'viz', id: 'loop1', title: 'for loop: got "red"', statusId: 'receiving' },
     ],
     [
+      { action: 'highlightLine', lineId: 'line-16' },
+      { action: 'addOutput', id: 'o4b', text: 'red', time: '0.1s' },
       { action: 'setStatus', cardId: 'gen2', statusId: 'running' },
       { action: 'setGlow', cardId: 'gen2', glow: true },
       { action: 'removeCard', cardId: 'loop1' },
     ],
     [
+      { action: 'highlightLine', lineId: 'line-2' },
       { action: 'setStatus', cardId: 'gen2', statusId: 'paused' },
       { action: 'setGlow', cardId: 'gen2', glow: false },
       { action: 'addOutput', id: 'o5', text: 'green', time: '0.1s' },
       { action: 'addCard', columnId: 'viz', id: 'loop2', title: 'for loop: got "green"', statusId: 'receiving' },
     ],
     [
+      { action: 'highlightLine', lineId: 'line-16' },
       { action: 'setStatus', cardId: 'gen2', statusId: 'running' },
       { action: 'setGlow', cardId: 'gen2', glow: true },
       { action: 'removeCard', cardId: 'loop2' },

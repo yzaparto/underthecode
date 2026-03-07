@@ -72,7 +72,7 @@ const yieldVsReturn: AnimationDefinition = {
       { action: 'addCard', columnId: 'viz', id: 'info', title: '📌 yield = PAUSE temporarily', statusId: 'paused' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-16' },
+      { action: 'highlightLine', lineId: 'line-15' },
       { action: 'removeCard', cardId: 'info' },
       { action: 'addCard', columnId: 'viz', id: 'func', title: 'get_one()', statusId: 'running' },
       { action: 'setGlow', cardId: 'func', glow: true },
@@ -88,12 +88,12 @@ const yieldVsReturn: AnimationDefinition = {
       { action: 'addCard', columnId: 'viz', id: 'exit', title: '🚪 Function EXITED', statusId: 'done' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-17' },
+      { action: 'highlightLine', lineId: 'line-16' },
       { action: 'addOutput', id: 'o2', text: 'Got: 1', time: '0.0s' },
       { action: 'addCard', columnId: 'viz', id: 'dead', title: '💀 "After return" never runs', statusId: 'created' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-20' },
+      { action: 'highlightLine', lineId: 'line-19' },
       { action: 'removeCard', cardId: 'func' },
       { action: 'removeCard', cardId: 'exit' },
       { action: 'removeCard', cardId: 'dead' },
@@ -101,7 +101,7 @@ const yieldVsReturn: AnimationDefinition = {
       { action: 'addCard', columnId: 'viz', id: 'note', title: '🆕 Generator created (not started)', statusId: 'created' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-21' },
+      { action: 'highlightLine', lineId: 'line-20' },
       { action: 'setStatus', cardId: 'gen', statusId: 'running' },
       { action: 'removeCard', cardId: 'note' },
       { action: 'setGlow', cardId: 'gen', glow: true },
@@ -117,11 +117,11 @@ const yieldVsReturn: AnimationDefinition = {
       { action: 'addCard', columnId: 'viz', id: 'pause', title: '⏸️ PAUSED at yield (not exited!)', statusId: 'paused' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-22' },
+      { action: 'highlightLine', lineId: 'line-21' },
       { action: 'addOutput', id: 'o4', text: 'Got: 1', time: '0.0s' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-23' },
+      { action: 'highlightLine', lineId: 'line-22' },
       { action: 'setStatus', cardId: 'gen', statusId: 'running' },
       { action: 'removeCard', cardId: 'pause' },
       { action: 'addCard', columnId: 'viz', id: 'resume', title: '🟢 RESUMED from yield!', statusId: 'running' },

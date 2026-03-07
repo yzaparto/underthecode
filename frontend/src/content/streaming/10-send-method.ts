@@ -70,7 +70,7 @@ const sendMethod: AnimationDefinition = {
       { action: 'addCard', columnId: 'flow', id: 'in', title: 'send() → injects IN', statusId: 'receiving' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-3' },
+      { action: 'highlightLine', lineId: 'line-4' },
       { action: 'removeCard', cardId: 'out' },
       { action: 'removeCard', cardId: 'in' },
       { action: 'addCard', columnId: 'flow', id: 'syntax', title: 'value = yield total', statusId: 'waiting' },
@@ -93,7 +93,7 @@ const sendMethod: AnimationDefinition = {
       { action: 'addCard', columnId: 'flow', id: 'prime', title: '⚡ next() primes generator', statusId: 'running' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-3' },
+      { action: 'highlightLine', lineId: 'line-4' },
       { action: 'setStatus', cardId: 'gen', statusId: 'paused' },
       { action: 'setGlow', cardId: 'gen', glow: false },
       { action: 'removeCard', cardId: 'prime' },
@@ -111,13 +111,13 @@ const sendMethod: AnimationDefinition = {
       { action: 'setGlow', cardId: 'gen', glow: true },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-6' },
+      { action: 'highlightLine', lineId: 'line-7' },
       { action: 'removeCard', cardId: 'send1' },
       { action: 'removeCard', cardId: 'state' },
       { action: 'addCard', columnId: 'flow', id: 'state', title: 'total = 10', statusId: 'running' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-3' },
+      { action: 'highlightLine', lineId: 'line-4' },
       { action: 'setStatus', cardId: 'gen', statusId: 'paused' },
       { action: 'setGlow', cardId: 'gen', glow: false },
       { action: 'addCard', columnId: 'flow', id: 'y2', title: '📤 yield total → 10', statusId: 'value' },

@@ -68,16 +68,16 @@ const yourFirstGenerator: AnimationDefinition = {
   steps: [
     [{ action: 'highlightLine', lineId: 'line-0' }],
     [
-      { action: 'highlightLine', lineId: 'line-11' },
+      { action: 'highlightLine', lineId: 'line-10' },
       { action: 'addCard', columnId: 'viz', id: 'gen', title: 'count_to_three()', statusId: 'created' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-12' },
+      { action: 'highlightLine', lineId: 'line-11' },
       { action: 'addOutput', id: 'o1', text: 'Generator created', time: '0.0s' },
       { action: 'addCard', columnId: 'viz', id: 'status', title: '🆕 Created — not started yet', statusId: 'created' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-14' },
+      { action: 'highlightLine', lineId: 'line-13' },
       { action: 'setStatus', cardId: 'gen', statusId: 'running' },
       { action: 'setStatus', cardId: 'status', statusId: 'running' },
       { action: 'removeCard', cardId: 'status' },
@@ -97,12 +97,12 @@ const yourFirstGenerator: AnimationDefinition = {
       { action: 'setGlow', cardId: 'gen', glow: false },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-15' },
+      { action: 'highlightLine', lineId: 'line-14' },
       { action: 'removeCard', cardId: 'val' },
       { action: 'addOutput', id: 'o3', text: 'Got: 1', time: '0.0s' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-17' },
+      { action: 'highlightLine', lineId: 'line-16' },
       { action: 'setStatus', cardId: 'gen', statusId: 'running' },
       { action: 'removeCard', cardId: 'status' },
       { action: 'addCard', columnId: 'viz', id: 'status', title: '🟢 Running — resumed!', statusId: 'running' },
@@ -121,12 +121,12 @@ const yourFirstGenerator: AnimationDefinition = {
       { action: 'setGlow', cardId: 'gen', glow: false },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-18' },
+      { action: 'highlightLine', lineId: 'line-17' },
       { action: 'removeCard', cardId: 'val2' },
       { action: 'addOutput', id: 'o5', text: 'Got: 2', time: '0.0s' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-20' },
+      { action: 'highlightLine', lineId: 'line-19' },
       { action: 'setStatus', cardId: 'gen', statusId: 'running' },
       { action: 'removeCard', cardId: 'status' },
       { action: 'addCard', columnId: 'viz', id: 'status', title: '🟢 Running — resumed!', statusId: 'running' },
@@ -145,7 +145,7 @@ const yourFirstGenerator: AnimationDefinition = {
       { action: 'setGlow', cardId: 'gen', glow: false },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-21' },
+      { action: 'highlightLine', lineId: 'line-20' },
       { action: 'removeCard', cardId: 'val3' },
       { action: 'addOutput', id: 'o7', text: 'Got: 3', time: '0.0s' },
       { action: 'clearHighlights' },

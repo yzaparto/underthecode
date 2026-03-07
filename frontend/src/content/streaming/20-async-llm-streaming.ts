@@ -88,7 +88,7 @@ const asyncLlmStreaming: AnimationDefinition = {
       { action: 'addCard', columnId: 'context', id: 'gen', title: 'stream_llm_response()', statusId: 'running' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-7' },
+      { action: 'highlightLine', lineId: 'line-8' },
       { action: 'addCard', columnId: 'result', id: 't1', title: '📤 "Hello"', statusId: 'value' },
       { action: 'setStatus', cardId: 'gen', statusId: 'paused' },
     ],
@@ -99,6 +99,7 @@ const asyncLlmStreaming: AnimationDefinition = {
       { action: 'addCard', columnId: 'result', id: 'display', title: '📺 User sees: "Hello"', statusId: 'receiving' },
     ],
     [
+      { action: 'highlightLine', lineId: 'line-8' },
       { action: 'setStatus', cardId: 'gen', statusId: 'running' },
       { action: 'removeCard', cardId: 'display' },
       { action: 'addCard', columnId: 'result', id: 't2', title: '📤 "!"', statusId: 'value' },
