@@ -62,7 +62,7 @@ const yieldFrom: AnimationDefinition = {
       { action: 'addCard', columnId: 'flow', id: 'i2', title: 'returns: "inner done!"', statusId: 'done' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-7' },
+      { action: 'highlightLine', lineId: 'line-6' },
       { action: 'removeCard', cardId: 'inner' },
       { action: 'removeCard', cardId: 'i1' },
       { action: 'removeCard', cardId: 'i2' },
@@ -72,7 +72,7 @@ const yieldFrom: AnimationDefinition = {
       { action: 'addCard', columnId: 'flow', id: 'm3', title: '😫 Tedious!', statusId: 'paused' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-13' },
+      { action: 'highlightLine', lineId: 'line-14' },
       { action: 'removeCard', cardId: 'manual' },
       { action: 'removeCard', cardId: 'm1' },
       { action: 'removeCard', cardId: 'm2' },
@@ -82,7 +82,7 @@ const yieldFrom: AnimationDefinition = {
       { action: 'addCard', columnId: 'flow', id: 'e2', title: '✨ One line!', statusId: 'receiving' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-19' },
+      { action: 'highlightLine', lineId: 'line-20' },
       { action: 'removeCard', cardId: 'easy' },
       { action: 'removeCard', cardId: 'e1' },
       { action: 'removeCard', cardId: 'e2' },
@@ -101,7 +101,7 @@ const yieldFrom: AnimationDefinition = {
       { action: 'addCard', columnId: 'flow', id: 'v1', title: '📤 inner yields: A', statusId: 'value' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-20' },
+      { action: 'highlightLine', lineId: 'line-21' },
       { action: 'removeCard', cardId: 'v1' },
       { action: 'addOutput', id: 'o1', text: 'A', time: '0.0s' },
       { action: 'addCard', columnId: 'flow', id: 'pass', title: '↗️ Passed through outer!', statusId: 'receiving' },
