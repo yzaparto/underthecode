@@ -1,0 +1,1220 @@
+Give me a prompt to generate images for this website through nano banan?
+I want to make it as easy to understand the concepts through images
+
+---
+
+is this useful for the first one 2. Basic Coroutines with await
+> Three worker figures that now have a special "async" badge (small lightning bolt). But they're still standing in a single-file queue on one lane, each waiting for the one ahead to finish. Visual emphasis that despite looking special/upgraded, the behavior is identical to image 1. A thought bubble above them shows "still sequential".
+3. Concurrent Tasks with create_task
+> A central dispatcher (circle labeled with a loop symbol) sending three workers onto three parallel lanes simultaneously. All three workers are active/glowing at the same time. The clock shows time equal to only the longest single task. Arrows show the dispatcher switching attention between workers at yield points (small pause icons on each lane).
+4. Awaiting in Different Orders
+> Three workers on parallel lanes, all already finished (green checkmarks). A hand/pointer reaches down to collect results, but picks them up in a different order than they finished (numbered 2, 3, 1). The workers that finished earlier have their results ready instantly when the hand reaches them. Conveys: finish order vs. collection order are independent.
+5. Blocking the Event Loop
+> A central event loop (spinning circle/gear) that is frozen/stuck — shown with ice crystals or a stop symbol. One worker is using a heavy anchor (representing time.sleep()) that chains down the event loop. Other workers nearby are frozen too, unable to move. Contrast with a small inset showing the correct way: the anchor replaced by a floating cloud (representing asyncio.sleep()), event loop spinning freely.
+6. Threads and Processes
+> Three separate zones: (1) An async event loop zone with lightweight workers doing I/O, (2) A thread zone with a medium-weight worker doing blocking I/O inside a thread bubble, connected to the event loop by a bridge, (3) A process zone with a heavy/muscular worker doing CPU work in a completely separate box with its own resources. Arrows show the event loop delegating to each zone.
+7. Scheduling Patterns
+> A 2x2 grid showing four patterns: Top-left: manual dispatching (hand placing workers one by one). Top-right: gather with coroutines (a funnel collecting coroutines into a bundle). Bottom-left: gather with pre-made tasks (pre-assembled workers going through the funnel). Bottom-right: TaskGroup (a structured container/box neatly holding workers with a safety net/boundary around them). Each quadrant uses the same three workers but organized differently.
+
+---
+
+is this good for the first one
+
+---
+
+I have put all the photos in content folder in /Users/zaparto/Desktop. Place it within the code base and use it approprateley
+
+---
+
+this does not look good right? Should we remove from here
+
+---
+
+Whn I click on next the animations heigh sometimes increase and decrease and then clicking on next next while keeping the mouse pointer does not work as expected should we haave a big height that is fixed so that the next does not shift
+
+---
+
+for 4th animation it still does not worek
+
+---
+
+Take a look at ~/Desktop/cpython/lib/asynio/ and come up with the concepts that we should explain to the users.
+
+---
+
+Do a thorough review and add all the animations, and instead of fetchdata() example give the examples of llms, chatbots, multiagent systems
+
+---
+
+are there other important concepts we can show to the users?
+
+---
+
+Reasearch all the concepts
+
+---
+
+Implement all these
+
+---
+
+For each one of the animations, inclue above the animation add sectoins about intro, why this is usefull, when to use this pattern then animation, later in the closing add some things to keep in mind and more patterns to read about it. Make each animation page a comprehensive full page self contained doc that the user / reader is able to fully understand the pattern as much as they can. Give ideas on where they can incorporate this patterm common pitfalls etc
+
+---
+
+Incorporate these if importatn:
+
+AlgoMaster Logo
+
+Learn
+
+Practice
+
+Newsletter
+
+Resources
+Concurrency Interview
+New
+
+F
+Toggle theme
+
+0
+
+
+Concurrency Interview
+Progress
+0/88 chapters
+Search topics...
+
+
+Welcome
+0/2
+
+Concurrency 101
+0/6
+
+Language Specific Concurrency
+0/27
+Java
+Creating Threads
+Java Memory Model
+Synchronized vs ReentrantLock
+java.util.concurrent Package Tour
+Virtual Threads
+CompletableFuture Async Programming
+Python
+Creating Threads
+Global Interpreter Lock (GIL)
+Threading vs Multiprocessing
+Asyncio Fundamentals
+concurrent.futures Module
+C++
+Creating Threads
+C++ Memory Model
+std::atomic and Memory Orders
+RAII for Concurrency
+std::async, std::future, and std::promise
+C#
+Creating Threads
+C# Memory Model
+Lock, Monitor, and Synchronization
+Task Parallel Library (TPL)
+Async/Await Internals
+Channels and Dataflow
+Go
+Creating Goroutines
+Go Memory Model
+Goroutines and Scheduler
+Channels Fundamentals
+sync Package
+
+Synchronization Primitives
+0/5
+Mutex (Mutual Exclusion)
+Semaphores
+Condition Variables
+Read-Write Locks
+Barriers and Latches
+
+Locking Strategies
+0/5
+Coarse-grained vs Fine-grained Locking
+Reentrant Locks
+Try-Lock and Timed Locking
+Optimistic vs Pessimistic Locking
+Two-Phase Locking
+
+Lock-Free Programming
+0/2
+Compare-And-Swap (CAS)
+Atomic Operations
+
+Concurrency Challenges
+0/7
+Deadlock
+Livelock
+Starvation
+Lost Signal / Wakeup
+Spurious Wakeup
+Thread Leakage
+Priority Inversion
+
+Concurrency Patterns
+0/7
+Signaling Pattern
+Thread Pool Pattern
+Producer-Consumer Pattern
+Reader-Writer Pattern
+Future/Promise Pattern
+Fork-Join Pattern
+Double-Checked Locking Pattern
+Interview Questions
+
+Synchronization Problems
+0/11
+
+Concurrency Design Problems
+0/7
+
+Concurrent Data Structures
+0/6
+
+Multi-threaded Algorithms
+0/3
+asyncio Fundamentals
+Last Updated: February 1, 2026
+
+asyncio is Python's framework for asynchronous I/O. It enables concurrent execution without threads by using an event loop and coroutines.
+
+A single thread switches between tasks at explicit yield points, achieving high concurrency with low overhead. This chapter teaches you how asyncio works, when to use it, and how to write effective asynchronous code.
+
+What is asyncio?
+Think of a restaurant with one waiter. The waiter does not stand at each table waiting for customers to decide their order. Instead, they take an order, give it to the kitchen, and move to the next table. When food is ready, they deliver it. One waiter efficiently serves many tables by never blocking on any single task.
+
+asyncio works similarly. Instead of threads that block waiting for I/O, you have coroutines that yield control when they would otherwise wait. An event loop schedules these coroutines, switching between them at await points.
+
+async def called
+
+Task created
+(create_task)
+
+Event loop
+schedules
+
+await encountered
+(I/O operation)
+
+I/O complete
+
+Coroutine returns
+
+Created
+
+Pending
+
+Running
+
+Suspended
+
+Done
+
+
+
+
+The diagram shows a coroutine's lifecycle. It starts Created (yellow) when you call an async def function. Wrapping it in create_task() makes it Pending (orange), waiting for the event loop. When scheduled, it becomes Running (green). At an await, it suspends to Suspended (cyan), allowing other coroutines to run. When its I/O completes, it resumes Running. Finally, when it returns, it is Done (purple).
+
+Key Concepts
+Coroutine: A function defined with async def. Calling it returns a coroutine object, not the result.
+Event Loop: The central scheduler that runs coroutines, handles I/O, and manages callbacks.
+Task: A wrapper that schedules a coroutine for execution on the event loop.
+await: Suspends the current coroutine until the awaited object completes.
+Coroutines: The Building Blocks
+A coroutine is defined with async def and uses await to yield control:
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def greet(name: str, delay: float) -> str:
+    print(f"Hello, {name}!")
+    await asyncio.sleep(delay)  # Yield control during sleep
+    print(f"Goodbye, {name}!")
+    return f"Greeted {name}"
+
+# Calling the function returns a coroutine object, not the result
+coro = greet("Alice", 1.0)
+print(type(coro))  # <class 'coroutine'>
+
+# To actually run it, use asyncio.run()
+result = asyncio.run(greet("Alice", 1.0))
+print(result)
+Output
+
+<class 'coroutine'>
+Hello, Alice!
+Goodbye, Alice!
+Greeted Alice
+A common mistake is forgetting that calling an async function does not execute it. You must either await it from another coroutine or run it with asyncio.run().
+
+Coroutines vs Regular Functions
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+# Regular function - executes immediately
+def sync_function():
+    print("Sync: running")
+    return "sync result"
+
+# Coroutine - returns coroutine object
+async def async_function():
+    print("Async: running")
+    return "async result"
+
+# Sync executes immediately
+result1 = sync_function()  # Prints and returns
+
+# Async returns coroutine object
+result2 = async_function()  # Nothing printed yet!
+print(f"Type: {type(result2)}")
+
+# Must await to execute
+async def main():
+    result = await async_function()  # Now it prints and returns
+    print(f"Result: {result}")
+
+asyncio.run(main())
+The Event Loop
+The event loop is the heart of asyncio. It schedules coroutines, handles I/O events, and runs callbacks. In most cases, you interact with it through asyncio.run().
+
+Get next ready task
+
+Task runs until await
+
+Register I/O wait
+
+I/O ready, add to queue
+
+Event Loop
+
+Ready Queue
+
+I/O Selector
+
+Task 1
+
+Task 2
+
+Task 3
+
+
+
+
+The event loop pulls tasks from the Ready Queue and runs them until they hit an await. When a task awaits I/O, the loop registers it with the I/O Selector and moves to the next ready task. When I/O completes, the selector signals the loop, which adds the task back to the ready queue.
+
+Running the Event Loop
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def main():
+    print("Main coroutine running")
+    await asyncio.sleep(1)
+    print("Main coroutine done")
+
+# Modern approach (Python 3.7+)
+asyncio.run(main())
+
+# Lower-level approach (rarely needed)
+# loop = asyncio.get_event_loop()
+# loop.run_until_complete(main())
+# loop.close()
+asyncio.run() creates a new event loop, runs the coroutine to completion, and cleans up. Use this for your program's entry point.
+
+Event Loop Inspection
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def inspect_loop():
+    loop = asyncio.get_running_loop()
+    print(f"Loop: {loop}")
+    print(f"Running: {loop.is_running()}")
+    print(f"Closed: {loop.is_closed()}")
+
+asyncio.run(inspect_loop())
+Tasks: Concurrent Execution
+A Task schedules a coroutine for concurrent execution. Without tasks, coroutines run sequentially:
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+import time
+
+async def say_after(delay: float, message: str) -> str:
+    await asyncio.sleep(delay)
+    print(message)
+    return message
+
+async def sequential():
+    """Run coroutines one after another."""
+    start = time.perf_counter()
+
+    await say_after(1, "First")
+    await say_after(1, "Second")
+
+    elapsed = time.perf_counter() - start
+    print(f"Sequential: {elapsed:.2f}s")
+
+async def concurrent():
+    """Run coroutines concurrently using tasks."""
+    start = time.perf_counter()
+
+    task1 = asyncio.create_task(say_after(1, "First"))
+    task2 = asyncio.create_task(say_after(1, "Second"))
+
+    await task1
+    await task2
+
+    elapsed = time.perf_counter() - start
+    print(f"Concurrent: {elapsed:.2f}s")
+
+asyncio.run(sequential())
+asyncio.run(concurrent())
+create_task() schedules the coroutine immediately. The two tasks run concurrently, both sleeping at the same time. Total time: 1 second instead of 2.
+
+Task Properties and Methods
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def slow_operation():
+    await asyncio.sleep(2)
+    return "completed"
+
+async def main():
+    task = asyncio.create_task(slow_operation(), name="MyTask")
+
+    print(f"Name: {task.get_name()}")
+    print(f"Done: {task.done()}")
+    print(f"Cancelled: {task.cancelled()}")
+
+    # Wait briefly then check status
+    await asyncio.sleep(0.1)
+    print(f"Still running: {not task.done()}")
+
+    # Wait for completion
+    result = await task
+    print(f"Result: {result}")
+    print(f"Done now: {task.done()}")
+
+asyncio.run(main())
+Awaiting Multiple Tasks
+So far, we have seen how to run coroutines one at a time with await and how to run them concurrently by creating tasks. But real applications often need more sophisticated coordination. You might need to fetch data from five APIs and wait for all of them. Or process results as they arrive rather than waiting for the slowest one. Or cancel all pending operations if one fails critically.
+
+asyncio provides several tools for these scenarios, each designed for different coordination patterns. Understanding when to use each one is essential for writing effective async code.
+
+gather: Run All, Collect Results
+The most common need is simple: run a bunch of coroutines and get all their results. That is exactly what gather() does. It takes multiple coroutines, runs them concurrently, waits for all to complete, and returns results in the same order you passed them in.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def fetch(url: str, delay: float) -> dict:
+    await asyncio.sleep(delay)
+    return {"url": url, "status": 200}
+
+async def main():
+    # Run all concurrently, wait for all to complete
+    results = await asyncio.gather(
+        fetch("https://api.example.com/users", 1),
+        fetch("https://api.example.com/posts", 2),
+        fetch("https://api.example.com/comments", 1.5),
+    )
+
+    for result in results:
+        print(result)
+
+asyncio.run(main())
+Notice that the results come back in the exact order you specified the coroutines, not the order they finished. The posts endpoint took longest (2 seconds), but its result appears in the middle because that is where you put it in the gather call. This predictability makes gather easy to reason about. The total time is approximately 2 seconds because all three requests run concurrently, so you only wait for the slowest one.
+
+gather with return_exceptions
+What happens when one of your coroutines fails? By default, gather propagates the first exception immediately. But sometimes you want to know which operations succeeded and which failed, especially when running independent operations.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def might_fail(n: int) -> int:
+    if n == 2:
+        raise ValueError(f"Failed at {n}")
+    await asyncio.sleep(0.1)
+    return n * 10
+
+async def main():
+    # Without return_exceptions - first exception propagates
+    # results = await asyncio.gather(*[might_fail(i) for i in range(4)])
+
+    # With return_exceptions - exceptions captured as results
+    results = await asyncio.gather(
+        *[might_fail(i) for i in range(4)],
+        return_exceptions=True
+    )
+
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            print(f"Task {i}: Exception - {result}")
+        else:
+            print(f"Task {i}: Success - {result}")
+
+asyncio.run(main())
+With return_exceptions=True, exceptions become regular return values instead of propagating. You can then iterate through results and handle each case appropriately. This is particularly useful for batch operations where partial success is acceptable.
+
+as_completed: Process Results as They Arrive
+gather waits for everything to finish before giving you any results. But what if you want to process each result immediately as it becomes available? Imagine downloading 100 files and wanting to display progress as each one completes, rather than waiting for all 100 to finish.
+
+as_completed() returns an iterator of awaitables in the order they complete, not the order you submitted them.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def fetch(url: str, delay: float) -> dict:
+    await asyncio.sleep(delay)
+    return {"url": url, "delay": delay}
+
+async def main():
+    tasks = [
+        fetch("fast", 0.5),
+        fetch("medium", 1.0),
+        fetch("slow", 1.5),
+    ]
+
+    # Process results as they complete (not in order)
+    for coro in asyncio.as_completed(tasks):
+        result = await coro
+        print(f"Completed: {result}")
+
+asyncio.run(main())
+The "fast" request prints first because it finishes first, even though it was not first in the input list. This is ideal for progress indicators, streaming results to a client, or any scenario where responsiveness matters more than order.
+
+wait: Fine-Grained Control
+Sometimes you need even more control. Maybe you want to wait for just the first task to complete, then decide whether to continue. Or wait until at least one task fails. Or set a timeout and process whatever finished in time.
+
+wait() gives you this flexibility by returning two sets: done tasks and pending tasks. You control how long to wait and what conditions trigger a return.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def task_with_delay(name: str, delay: float) -> str:
+    await asyncio.sleep(delay)
+    return name
+
+async def main():
+    tasks = {
+        asyncio.create_task(task_with_delay("A", 1.0)),
+        asyncio.create_task(task_with_delay("B", 0.5)),
+        asyncio.create_task(task_with_delay("C", 2.0)),
+    }
+
+    # Wait for first to complete
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+    print(f"Done: {len(done)}, Pending: {len(pending)}")
+    for task in done:
+        print(f"Completed: {task.result()}")
+
+    # Wait for remaining
+    done, pending = await asyncio.wait(pending)
+    for task in done:
+        print(f"Completed: {task.result()}")
+
+asyncio.run(main())
+Task B finishes first (0.5s delay), so the first wait() returns immediately with one done task and two pending. We then wait for the remaining tasks to complete. The return_when parameter accepts three values: FIRST_COMPLETED (return when any task finishes), FIRST_EXCEPTION (return when any task raises), and ALL_COMPLETED (wait for everything, the default).
+
+Choosing the Right Method
+With three different ways to coordinate tasks, how do you pick? The table below summarizes when to use each.
+
+Comparison Table
+Method	Use Case	Order	Error Handling
+gather	Run all, get results in order	Input order	Configurable via return_exceptions
+as_completed	Process results immediately	Completion order	Handle per-item in loop
+wait	Control when to return	Unordered sets	Manual via task.result()
+TaskGroup	Structured concurrency	N/A	Automatic cancellation
+Use gather when you need all results and order matters. Use as_completed when you want to process results as fast as possible. Use wait when you need early exit conditions or timeout behavior. Use TaskGroup (Python 3.11+) when you want automatic cleanup on failure, which we will cover in the Error Handling section.
+
+async/await Deep Dive
+Understanding what can and cannot be awaited is crucial for writing correct async code. The await keyword does not work on arbitrary objects. It requires objects that implement the awaitable protocol.
+
+What You Can Await
+The following types can be used with await.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def main():
+    # 1. Coroutines
+    async def coro():
+        return "coroutine"
+    result = await coro()
+
+    # 2. Tasks
+    task = asyncio.create_task(coro())
+    result = await task
+
+    # 3. Futures
+    future = asyncio.get_running_loop().create_future()
+    future.set_result("future")
+    result = await future
+
+    # 4. asyncio sleep and other asyncio functions
+    await asyncio.sleep(0)
+
+    # 5. Anything with __await__ method
+    # (Custom awaitable objects)
+
+asyncio.run(main())
+In practice, you will mostly await coroutines and tasks. Futures are lower-level and rarely used directly. Custom awaitables are useful for advanced patterns like implementing your own async context managers.
+
+What You Cannot Await
+Regular Python objects cannot be awaited. Attempting to do so raises TypeError.
+
+Python
+
+
+
+
+
+
+import asyncio
+
+async def main():
+    # Regular functions - TypeError!
+    def regular():
+        return "regular"
+    # await regular()  # TypeError: object str can't be used in 'await' expression
+
+    # Non-awaitable objects
+    x = 42
+    # await x  # TypeError
+
+    # Lists, strings, etc.
+    # await [1, 2, 3]  # TypeError
+
+asyncio.run(main())
+Common async/await Mistakes
+These are the mistakes that trip up every asyncio beginner. Understanding them will save you hours of debugging.
+
+Python
+
+
+
+
+
+
+import asyncio
+
+# MISTAKE 1: Forgetting await
+async def mistake_1():
+    result = asyncio.sleep(1)  # Returns coroutine, doesn't wait!
+    print(f"Got: {result}")    # Prints coroutine object
+    # Fix: await asyncio.sleep(1)
+
+# MISTAKE 2: Using await outside async function
+def mistake_2():
+    # await asyncio.sleep(1)  # SyntaxError!
+    pass
+
+# MISTAKE 3: Calling async function without await
+async def async_func():
+    return "result"
+
+async def mistake_3():
+    result = async_func()  # Returns coroutine, not "result"
+    print(type(result))    # <class 'coroutine'>
+    # Fix: result = await async_func()
+
+# MISTAKE 4: Blocking the event loop
+import time
+
+async def mistake_4():
+    time.sleep(5)  # BLOCKS entire event loop!
+    # Fix: await asyncio.sleep(5)
+
+asyncio.run(mistake_1())
+Mistake 4 is particularly insidious because the code runs without errors. It just makes your async application slow, defeating the purpose of using asyncio in the first place.
+
+asyncio vs Threading
+You now know how asyncio works. But how does it compare to the threading approach we covered earlier? Both achieve concurrency, but through fundamentally different mechanisms. Understanding these differences helps you choose the right tool for each situation.
+
+Preemptive
+OS controls switching
+
+Cooperative
+Code controls switching
+
+asyncio
+
+Event Loop
+
+Coroutine 1
+
+Coroutine 2
+
+Coroutine 3
+
+threading
+
+OS Scheduler
+
+Thread 1
+
+Thread 2
+
+Thread 3
+
+
+
+
+The diagram illustrates the key architectural difference. Threading uses preemptive multitasking: the OS switches threads at arbitrary points, potentially mid-operation. asyncio uses cooperative multitasking: your code explicitly yields control with await, so you know exactly when context switches can happen.
+
+Comparison
+The table below summarizes the practical differences.
+
+Aspect	threading	asyncio
+Scheduling	Preemptive (OS)	Cooperative (await)
+Context switch	OS-level, ~1μs	Python-level, ~100ns
+Memory overhead	~1MB per thread	~1KB per coroutine
+Max concurrent	~1000 threads	~100,000+ coroutines
+Race conditions	Yes (need locks)	Rare (single-threaded)
+Blocking calls	Each thread blocks independently	Blocks entire loop
+CPU-bound work	GIL limits parallelism	Single-threaded
+I/O-bound work	Good	Excellent
+The memory difference is dramatic. A thread needs a full stack (~1MB), while a coroutine is just a Python object (~1KB). This is why asyncio can handle 100,000+ concurrent connections while threading struggles past 1,000.
+
+When to Use Each
+Here is a quick decision guide.
+
+Python
+
+
+
+
+
+
+# Use asyncio for:
+# - High-concurrency I/O (1000s of connections)
+# - Event-driven programming
+# - When memory is constrained
+# - WebSocket servers, API clients
+
+# Use threading for:
+# - Lower concurrency requirements
+# - Mixing with CPU-bound work
+# - Working with blocking libraries
+# - Simpler mental model
+I/O Operations with asyncio
+So far we have used asyncio.sleep() to simulate I/O delays. Real-world asyncio involves actual network and file operations. The key requirement is using async-compatible libraries, as standard library functions like requests.get() or open() would block the event loop.
+
+The two most common I/O operations are HTTP requests and file access. Let us look at the standard async libraries for each.
+
+HTTP Requests with aiohttp
+aiohttp is the go-to library for async HTTP. It provides a session-based API similar to requests, but fully async.
+
+Python
+
+
+
+
+
+
+import asyncio
+import aiohttp
+import time
+
+async def fetch_url(session: aiohttp.ClientSession, url: str) -> dict:
+    async with session.get(url) as response:
+        return {
+            "url": url,
+            "status": response.status,
+            "length": len(await response.text()),
+        }
+
+async def main():
+    urls = [
+        "https://www.python.org",
+        "https://docs.python.org",
+        "https://pypi.org",
+    ]
+
+    start = time.perf_counter()
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_url(session, url) for url in urls]
+        results = await asyncio.gather(*tasks)
+
+    elapsed = time.perf_counter() - start
+
+    for result in results:
+        print(f"{result['url']}: {result['status']} ({result['length']} bytes)")
+
+    print(f"Total time: {elapsed:.2f}s")
+
+# asyncio.run(main())  # Requires: pip install aiohttp
+Expected Output:
+
+
+
+
+
+
+
+https://www.python.org: 200 (50426 bytes)
+https://docs.python.org: 200 (13847 bytes)
+https://pypi.org: 200 (18374 bytes)
+Total time: 0.45s
+All three requests run concurrently, so total time is roughly the slowest individual request rather than the sum. The ClientSession context manager handles connection pooling and cleanup automatically.
+
+File Operations with aiofiles
+For file I/O, aiofiles provides async wrappers around standard file operations.
+
+Python
+
+
+
+
+
+
+import asyncio
+import aiofiles
+
+async def read_file(path: str) -> str:
+    async with aiofiles.open(path, mode='r') as f:
+        return await f.read()
+
+async def write_file(path: str, content: str) -> None:
+    async with aiofiles.open(path, mode='w') as f:
+        await f.write(content)
+
+async def main():
+    await write_file("test.txt", "Hello, asyncio!")
+    content = await read_file("test.txt")
+    print(f"Read: {content}")
+
+# asyncio.run(main())  # Requires: pip install aiofiles
+The API mirrors the standard open() function, but with async with and await for all operations. Under the hood, aiofiles uses a thread pool to make file I/O non-blocking.
+
+Error Handling
+When things go wrong in async code, you need to know how exceptions propagate and how to catch them. The good news is that exception handling in coroutines works much like regular Python code, with a few async-specific considerations.
+
+Basic Exception Handling
+When you await a coroutine that raises an exception, the exception propagates to the caller just like a regular function call. You can catch it with try/except as usual.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def might_fail(should_fail: bool) -> str:
+    await asyncio.sleep(0.1)
+    if should_fail:
+        raise ValueError("Something went wrong!")
+    return "success"
+
+async def main():
+    # Handle exception from single coroutine
+    try:
+        result = await might_fail(True)
+    except ValueError as e:
+        print(f"Caught: {e}")
+
+    # Exception from task
+    task = asyncio.create_task(might_fail(True))
+    try:
+        await task
+    except ValueError as e:
+        print(f"Task exception: {e}")
+
+asyncio.run(main())
+Output:
+
+
+
+
+
+
+
+Caught: Something went wrong!
+Task exception: Something went wrong!
+Both cases work the same way: the exception is raised at the await point, and you catch it with standard try/except.
+
+Exception in Unawaited Task
+Things get trickier when you create a task but do not await it immediately. The task runs in the background, and if it fails, where does the exception go?
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def background_task():
+    await asyncio.sleep(0.1)
+    raise RuntimeError("Background failure!")
+
+async def main():
+    # Create task but don't await it immediately
+    task = asyncio.create_task(background_task())
+
+    await asyncio.sleep(0.5)
+
+    # Check if task failed
+    if task.done():
+        try:
+            task.result()  # Raises the exception
+        except RuntimeError as e:
+            print(f"Task failed: {e}")
+
+asyncio.run(main())
+Output:
+
+
+
+
+
+
+
+Task failed: Background failure!
+The exception is stored in the task. If you never check for it (via await task, task.result(), or task.exception()), Python will emit a warning when the task is garbage collected: "Task exception was never retrieved." Always await your tasks or explicitly check for exceptions.
+
+TaskGroup for Structured Concurrency (Python 3.11+)
+The methods we have discussed so far (gather, as_completed, wait) all have a subtle problem: if one task fails, what happens to the others? With gather, they keep running in the background. With wait, you need to manually cancel pending tasks. This can lead to resource leaks and confusing behavior.
+
+Python 3.11 introduced TaskGroup, which enforces "structured concurrency." The idea is simple but powerful: all tasks created within a group are guaranteed to complete (or be cancelled) before the group exits. If any task fails, all other tasks are automatically cancelled.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def worker(n: int) -> int:
+    if n == 2:
+        raise ValueError(f"Worker {n} failed!")
+    await asyncio.sleep(0.1)
+    return n * 10
+
+async def main():
+    try:
+        async with asyncio.TaskGroup() as tg:
+            task1 = tg.create_task(worker(1))
+            task2 = tg.create_task(worker(2))  # Will fail
+            task3 = tg.create_task(worker(3))
+    except* ValueError as eg:
+        for exc in eg.exceptions:
+            print(f"Caught: {exc}")
+
+asyncio.run(main())
+Output:
+
+
+
+
+
+
+
+Caught: Worker 2 failed!
+When worker 2 raises ValueError, TaskGroup immediately cancels workers 1 and 3, waits for them to handle cancellation, and then raises an ExceptionGroup containing all the exceptions. The except* syntax (also new in Python 3.11) lets you handle specific exception types from the group.
+
+This behavior is exactly what you want for operations that should succeed or fail together. If you are processing a batch where partial completion is meaningless, TaskGroup ensures you do not end up in an inconsistent state with some tasks done and others abandoned mid-execution.
+
+The key advantages of TaskGroup over gather:
+
+Automatic cleanup: Failed tasks trigger cancellation of siblings
+No orphaned tasks: All tasks are guaranteed to complete before the context manager exits
+Cleaner exception handling: ExceptionGroup collects all failures, not just the first one
+Explicit scope: The task lifetime is visually clear from the async with block
+Cancellation
+Sometimes you need to stop a task before it completes. Maybe a timeout expired, the user cancelled an operation, or an error in one task means others are no longer needed. asyncio supports cancellation through the CancelledError exception.
+
+When you call task.cancel(), asyncio raises CancelledError inside the task at the next await point. The task can catch this exception to perform cleanup before exiting.
+
+Python
+
+Run
+
+
+
+
+
+
+import asyncio
+
+async def long_running():
+    try:
+        print("Starting long task")
+        await asyncio.sleep(10)
+        print("Finished (won't reach here)")
+    except asyncio.CancelledError:
+        print("Task was cancelled!")
+        raise  # Re-raise to mark task as cancelled
+
+async def main():
+    task = asyncio.create_task(long_running())
+
+    await asyncio.sleep(1)
+    task.cancel()
+
+    try:
+        await task
+    except asyncio.CancelledError:
+        print("Main: confirmed task cancelled")
+
+    print(f"Task cancelled: {task.cancelled()}")
+
+asyncio.run(main())
+Output:
+
+
+
+
+
+
+
+Starting long task
+Task was cancelled!
+Main: confirmed task cancelled
+Task cancelled: True
+The key point is re-raising CancelledError after cleanup. If you suppress it (do not re-raise), the task completes normally instead of being marked as cancelled, which can confuse calling code.
+
+Timeout with asyncio.timeout (Python 3.11+)
+A common reason for cancellation is timeout. Python 3.11 introduced a clean context manager for this.
+
+Python
+
+
+
+
+
+
+import asyncio
+
+async def slow_operation():
+    await asyncio.sleep(10)
+    return "done"
+
+async def main():
+    try:
+        async with asyncio.timeout(2):
+            result = await slow_operation()
+    except TimeoutError:
+        print("Operation timed out!")
+
+asyncio.run(main())
+Output:
+
+
+
+
+
+
+
+Operation timed out!
+If the operation does not complete within 2 seconds, asyncio cancels it and raises TimeoutError. For Python 3.10 and earlier, use asyncio.wait_for(slow_operation(), timeout=2).
+
+How helpful was this content?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+Comments
+
+
+
+
+
+
+
+
+
+
+
+
+
+0/2000
+Comment
+No comments yet. Be the first to comment!
+
+Reading Progress
+0%
+On this page
+What is asyncio?
+Coroutines: The Building Blocks
+The Event Loop
+Tasks: Concurrent Execution
+Awaiting Multiple Tasks
+async/await Deep Dive
+asyncio vs Threading
+I/O Operations with asyncio
+Error Handling
+Cancellation
+FEEDBACK
+Share Your Feedback
+
+Feedback Type
+
+Issue
+Message
+0/200
+Tell us what you think...
+
+Add screenshot
+(max 5MB)
+
+Anonymous
+
+Submit Feedback
+Vote/Request Content
+
+Aa
+Threading vs Multipr...
+
+Take Notes
+
+Star
+
+Mark as Complete
+
+Ask AI
+concurrent.futures M...
+Python Asyncio Fundamentals | Concurrency Interview | AlgoMaster.io | AlgoMaster.io
+
+---
+
+remove section about asyncio vs threading
+
+---
+
+Right now the text for each animation / pattern is in the code I want to extract that from code and put it in .md files and read it from thoise files. It weould be easier to maintain
+
+---
+
+git commit to my prive repo in yzapart user
+
+---
+
+git commit to my prive repo in yzaparto  user
+
+---
+
+git commit to my prive repo in yzaparto  user
+
+---
+
+@/Users/zaparto/.cursor/projects/Users-zaparto-underthecode/terminals/1.txt:69-80
+
+---
+
+can you remove the images from the github and also the mention of images in the codebase

@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.5.0",
+  "checkpoint_id": "f16a310949d1",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "frontend/public/images/asyncio/01-sync-execution.png",
+    "frontend/public/images/asyncio/02-basic-coroutines.png",
+    "frontend/public/images/asyncio/03-create-task.png",
+    "frontend/public/images/asyncio/05-blocking-loop.png",
+    "frontend/public/images/asyncio/06-threads-processes.png",
+    "frontend/public/images/asyncio/07-scheduling-patterns.png",
+    "frontend/src/pages/AnimationPage.tsx",
+    "frontend/src/pages/Home.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/f1/6a310949d1/0/metadata.json",
+      "transcript": "/f1/6a310949d1/0/full.jsonl",
+      "content_hash": "/f1/6a310949d1/0/content_hash.txt",
+      "prompt": "/f1/6a310949d1/0/prompt.txt"
+    }
+  ]
+}
