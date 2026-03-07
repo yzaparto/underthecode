@@ -139,7 +139,7 @@ const streaming: AnimationDefinition = {
     // Phase: Start Event Loop (step 3)
     [
       { action: 'highlightLine', lineId: 'line-18' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase: Enter main + Start Streaming (steps 4–6)

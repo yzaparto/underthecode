@@ -1,5 +1,53 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic theme tokens */
+:root {
+  --theme-bg: #F8FAFC;
+  --theme-surface: #FFFFFF;
+  --theme-surface-2: #F1F5F9;
+  --theme-text: #0F172A;
+  --theme-text-muted: #475569;
+  --theme-border: #E2E8F0;
+  --theme-brand: #0891B2;
+  --theme-brand-hover: #0E7490;
+  --theme-violet: #8B5CF6;
+  --theme-green: #10B981;
+  --theme-amber: #D97706;
+  --theme-red: #E11D48;
+}
+
+.dark {
+  --theme-bg: #0B1020;
+  --theme-surface: #111827;
+  --theme-surface-2: #0F172A;
+  --theme-text: #E6EDF3;
+  --theme-text-muted: #94A3B8;
+  --theme-border: #243041;
+  --theme-brand: #22D3EE;
+  --theme-brand-hover: #06B6D4;
+  --theme-violet: #A78BFA;
+  --theme-green: #34D399;
+  --theme-amber: #FBBF24;
+  --theme-red: #FB7185;
+}
+
+@theme inline {
+  --color-bg: var(--theme-bg);
+  --color-surface: var(--theme-surface);
+  --color-surface-2: var(--theme-surface-2);
+  --color-text: var(--theme-text);
+  --color-muted: var(--theme-text-muted);
+  --color-border: var(--theme-border);
+  --color-brand: var(--theme-brand);
+  --color-brand-hover: var(--theme-brand-hover);
+  --color-violet: var(--theme-violet);
+  --color-green: var(--theme-green);
+  --color-amber: var(--theme-amber);
+  --color-red: var(--theme-red);
+}
+
 code, pre, kbd, samp {
   font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Source Code Pro', Menlo, Consolas, 'Courier New', monospace;
 }

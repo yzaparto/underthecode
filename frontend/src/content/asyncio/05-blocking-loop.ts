@@ -116,7 +116,7 @@ const blockingLoop: AnimationDefinition = {
 
     // Phase 2: Starting the Event Loop (steps 4–5)
     [{ action: 'highlightLine', lineId: 'line-21' }],
-    [{ action: 'highlightLine', lineId: 'line-11' }, { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' }],
+    [{ action: 'highlightLine', lineId: 'line-11' }, { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' }],
 
     // Phase 3: Creating Tasks (steps 6–7)
     [{ action: 'highlightLine', lineId: 'line-12' }, { action: 'addCard', columnId: 'loop', id: 'task1', title: 'call_llm("gpt-4")', statusId: 'ready' }],

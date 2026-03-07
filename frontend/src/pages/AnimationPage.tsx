@@ -6,7 +6,7 @@ import { Prose } from '../components/InlineCode'
 
 const TOTAL = animations.length
 
-function SectionHeading({ children, color = 'text-blue-400' }: { children: React.ReactNode; color?: string }) {
+function SectionHeading({ children, color = 'text-brand' }: { children: React.ReactNode; color?: string }) {
   return (
     <h2 className={`text-xl font-semibold ${color}`}>
       {children}
@@ -18,13 +18,13 @@ function Paragraphs({ items }: { items: string[] }) {
   return (
     <>
       {items.map((p, i) => (
-        <p key={i} className="text-gray-300 leading-relaxed"><Prose text={p} /></p>
+        <p key={i} className="leading-relaxed text-muted"><Prose text={p} /></p>
       ))}
     </>
   )
 }
 
-function BulletList({ items, className = 'text-gray-300' }: { items: string[]; className?: string }) {
+function BulletList({ items, className = 'text-muted' }: { items: string[]; className?: string }) {
   return (
     <ul className={`list-disc space-y-2 pl-5 ${className}`}>
       {items.map((item, i) => (
@@ -52,23 +52,23 @@ export function AnimationPage() {
       <div className="mb-8 flex items-center justify-between">
         <Link
           to="/articles/python-asyncio"
-          className="text-sm text-gray-400 hover:text-white transition-colors"
+          className="text-sm text-muted transition-colors hover:text-text"
         >
           &larr; Back to overview
         </Link>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-muted">
           {index + 1} of {TOTAL}
         </span>
       </div>
 
-      <h1 className="text-3xl font-bold tracking-tight text-white">
+      <h1 className="text-3xl font-bold tracking-tight text-text">
         {animation.title}
       </h1>
-      <p className="mt-2 text-sm text-gray-500">
+      <p className="mt-2 text-sm text-muted">
         Animation {index + 1} of {TOTAL}
       </p>
 
-      <hr className="my-8 border-gray-800" />
+      <hr className="my-8 border-border" />
 
       {/* ── BEFORE THE ANIMATION ── */}
 
@@ -80,20 +80,20 @@ export function AnimationPage() {
 
       {/* Why This Matters */}
       <section className="mb-10 space-y-4">
-        <SectionHeading color="text-purple-400">Why This Matters</SectionHeading>
+        <SectionHeading color="text-violet">Why This Matters</SectionHeading>
         <Paragraphs items={article.before.whyUseful} />
       </section>
 
       {/* When to Use This Pattern */}
       <section className="mb-10 space-y-4">
-        <SectionHeading color="text-cyan-400">When to Use This Pattern</SectionHeading>
+        <SectionHeading color="text-brand">When to Use This Pattern</SectionHeading>
         <BulletList items={article.before.whenToUse} />
       </section>
 
       {/* Stepper hint */}
       <div className="mb-6">
-        <p className="text-sm text-gray-500">
-          Press <kbd className="rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-xs">&rarr;</kbd> or
+        <p className="text-sm text-muted">
+          Press <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-xs">&rarr;</kbd> or
           click &ldquo;Next&rdquo; to step through the animation.
         </p>
       </div>
@@ -103,22 +103,22 @@ export function AnimationPage() {
 
       {/* ── AFTER THE ANIMATION ── */}
 
-      <hr className="my-10 border-gray-800" />
+      <hr className="my-10 border-border" />
 
       {/* Walkthrough */}
       <section className="mt-10 space-y-4">
-        <SectionHeading color="text-green-400">What Just Happened</SectionHeading>
+        <SectionHeading color="text-green">What Just Happened</SectionHeading>
         <Paragraphs items={article.after.walkthrough} />
       </section>
 
       {/* Keep in Mind */}
       {article.after.keepInMind.length > 0 && (
         <section className="mt-10">
-          <div className="rounded-lg border border-yellow-900/50 bg-yellow-950/30 p-6">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-yellow-400">
+          <div className="rounded-lg border border-amber/50 bg-amber/10 p-6">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-amber">
               Keep in Mind
             </h3>
-            <BulletList items={article.after.keepInMind} className="text-sm text-yellow-200/80" />
+            <BulletList items={article.after.keepInMind} className="text-sm text-amber" />
           </div>
         </section>
       )}
@@ -126,11 +126,11 @@ export function AnimationPage() {
       {/* Common Pitfalls */}
       {article.after.pitfalls.length > 0 && (
         <section className="mt-10">
-          <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-6">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-red-400">
+          <div className="rounded-lg border border-red/50 bg-red/10 p-6">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-red">
               Common Pitfalls
             </h3>
-            <BulletList items={article.after.pitfalls} className="text-sm text-red-200/80" />
+            <BulletList items={article.after.pitfalls} className="text-sm text-red" />
           </div>
         </section>
       )}
@@ -138,7 +138,7 @@ export function AnimationPage() {
       {/* Where to Incorporate This */}
       {article.after.realWorld.length > 0 && (
         <section className="mt-10 space-y-4">
-          <SectionHeading color="text-emerald-400">Where to Incorporate This</SectionHeading>
+          <SectionHeading color="text-green">Where to Incorporate This</SectionHeading>
           <BulletList items={article.after.realWorld} />
         </section>
       )}
@@ -146,18 +146,18 @@ export function AnimationPage() {
       {/* Related Patterns */}
       {article.after.relatedPatterns.length > 0 && (
         <section className="mt-10 space-y-4">
-          <SectionHeading color="text-indigo-400">Related Patterns &amp; Further Reading</SectionHeading>
+          <SectionHeading color="text-violet">Related Patterns &amp; Further Reading</SectionHeading>
           <BulletList items={article.after.relatedPatterns} />
         </section>
       )}
 
       {/* Prev / Next navigation */}
-      <hr className="my-10 border-gray-800" />
+      <hr className="my-10 border-border" />
       <div className="flex items-center justify-between">
         {prev !== null ? (
           <Link
             to={`/articles/python-asyncio/${prev}`}
-            className="rounded-lg border border-gray-800 px-5 py-3 text-sm text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-900"
+            className="rounded-lg border border-border px-5 py-3 text-sm text-muted transition-colors hover:border-border hover:bg-surface-2"
           >
             &larr; {animations[prev - 1].title}
           </Link>
@@ -167,14 +167,14 @@ export function AnimationPage() {
         {next !== null ? (
           <Link
             to={`/articles/python-asyncio/${next}`}
-            className="rounded-lg border border-gray-800 px-5 py-3 text-sm text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-900"
+            className="rounded-lg border border-border px-5 py-3 text-sm text-muted transition-colors hover:border-border hover:bg-surface-2"
           >
             {animations[next - 1].title} &rarr;
           </Link>
         ) : (
           <Link
             to="/articles/python-asyncio"
-            className="rounded-lg border border-green-800 bg-green-950/30 px-5 py-3 text-sm text-green-300 transition-colors hover:bg-green-950/50"
+            className="rounded-lg border border-green bg-green/20 px-5 py-3 text-sm text-green transition-colors hover:bg-green/30"
           >
             Back to overview &rarr;
           </Link>

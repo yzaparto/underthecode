@@ -145,7 +145,7 @@ const barrier: AnimationDefinition = {
     // Phase: Start Event Loop (step 4)
     [
       { action: 'highlightLine', lineId: 'line-23' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase: Create TaskGroup & Tasks (steps 5–8)

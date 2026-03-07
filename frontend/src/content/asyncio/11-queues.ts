@@ -158,7 +158,7 @@ const queues: AnimationDefinition = {
     // Phase: Start Event Loop (steps 4–5)
     [
       { action: 'highlightLine', lineId: 'line-31' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
     [{ action: 'highlightLine', lineId: 'line-23' }],
 

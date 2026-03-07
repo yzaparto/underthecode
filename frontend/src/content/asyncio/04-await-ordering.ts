@@ -135,7 +135,7 @@ const awaitOrdering: AnimationDefinition = {
     [{ action: 'highlightLine', lineId: 'line-20' }],
     [
       { action: 'highlightLine', lineId: 'line-10' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase 3: Creating Tasks (steps 5–6)

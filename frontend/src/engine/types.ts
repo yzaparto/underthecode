@@ -52,6 +52,8 @@ export type StepAction =
   | { action: 'setStatus'; cardId: string; statusId: string }
   | { action: 'setGlow'; cardId: string; glow: boolean }
   | { action: 'setSpinner'; cardId: string; hasSpinner: boolean }
+  | { action: 'setCardCode'; cardId: string; lines: string[]; highlightLine?: number }
+  | { action: 'setCardHighlight'; cardId: string; highlightLine: number | null }
   | { action: 'addOutput'; id: string; text: string; time?: string }
 
 export interface AnimationDefinition {

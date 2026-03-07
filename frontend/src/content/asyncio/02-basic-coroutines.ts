@@ -48,6 +48,28 @@ print(results)`
 // line-20: results = asyncio.run(main())
 // line-21: print(results)
 
+const MAIN_SNIPPET = [
+  'async def main():',
+  '    task1 = call_llm("gpt-4")',
+  '    task2 = call_llm("claude")',
+  '    result1 = await task1',
+  '    print("GPT-4 done")',
+  '    result2 = await task2',
+  '    print("Claude done")',
+  '    return [result1, result2]',
+  '',
+  'results = asyncio.run(main())',
+  'print(results)',
+]
+
+const CALL_LLM_SNIPPET = [
+  'async def call_llm(model):',
+  '    print(f"Calling {model}...")',
+  '    await asyncio.sleep(2 if model == "claude" else 1)',
+  '    print(f"{model} responded")',
+  '    return f"Response from {model}"',
+]
+
 const basicCoroutines: AnimationDefinition = {
   id: 'asyncio-basic-coroutines',
   title: 'Basic Coroutines with await',
@@ -109,35 +131,69 @@ const basicCoroutines: AnimationDefinition = {
       title: 'Completion',
       explanation: '• Both responses collected and returned\n• Despite `async/await`, execution was fully sequential\n• Each `await` blocked `main()` until that coroutine finished\n• To get real concurrency, you need `asyncio.create_task()`',
       startStep: 23,
-      endStep: 28,
+      endStep: 27,
     },
   ],
 
   steps: [
-    // Phase: Module Setup (steps 0–3)
-    [{ action: 'highlightLine', lineId: 'line-0' }],
-    [{ action: 'highlightLine', lineId: 'line-3' }],
-    [{ action: 'highlightLine', lineId: 'line-10' }],
-    [{ action: 'highlightLine', lineId: 'line-20' }],
-
-    // Phase: Event Loop Starts (steps 4–7)
+    // Phase: Module Setup (steps 0–3) — show code in Module card
     [
-      { action: 'highlightLine', lineId: 'line-10' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'code', id: 'module', title: 'Module', statusId: 'running' },
+      { action: 'setCardCode', cardId: 'module', lines: ['import asyncio'], highlightLine: 0 },
+      { action: 'highlightLine', lineId: 'line-0' },
     ],
-    [{ action: 'highlightLine', lineId: 'line-11' }],
-    [{ action: 'highlightLine', lineId: 'line-12' }],
-    [{ action: 'highlightLine', lineId: 'line-13' }],
+    [
+      { action: 'setCardCode', cardId: 'module', lines: CALL_LLM_SNIPPET, highlightLine: 0 },
+      { action: 'highlightLine', lineId: 'line-3' },
+    ],
+    [
+      {
+        action: 'setCardCode',
+        cardId: 'module',
+        lines: MAIN_SNIPPET.slice(0, 9),
+        highlightLine: 0,
+      },
+      { action: 'highlightLine', lineId: 'line-10' },
+    ],
+    [
+      {
+        action: 'setCardCode',
+        cardId: 'module',
+        lines: ['results = asyncio.run(main())', 'print(results)'],
+        highlightLine: 0,
+      },
+      { action: 'highlightLine', lineId: 'line-20' },
+    ],
 
-    // Phase: Awaiting task1 — call_llm("gpt-4") (steps 8–13)
+    // Phase: Event Loop Starts (steps 4–7) — main() running; highlight shows current line in source
+    [
+      { action: 'removeCard', cardId: 'module' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'setCardCode', cardId: 'main', lines: MAIN_SNIPPET, highlightLine: 1 },
+      { action: 'highlightLine', lineId: 'line-11' },
+    ],
+    [
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 2 },
+      { action: 'highlightLine', lineId: 'line-12' },
+    ],
+    [
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 3 },
+      { action: 'highlightLine', lineId: 'line-13' },
+    ],
+
+    // Phase: Awaiting task1 — call_llm("gpt-4") running on event loop; highlight in source
     [
       { action: 'setStatus', cardId: 'main', statusId: 'suspended' },
       { action: 'addCard', columnId: 'loop', id: 'task1', title: 'call_llm("gpt-4")', statusId: 'running' },
+      { action: 'setCardCode', cardId: 'task1', lines: CALL_LLM_SNIPPET, highlightLine: 0 },
       { action: 'setGlow', cardId: 'task1', glow: true },
       { action: 'highlightLine', lineId: 'line-4' },
       { action: 'addOutput', id: 'o1', text: 'Calling gpt-4...', time: '0.0s' },
     ],
-    [{ action: 'highlightLine', lineId: 'line-5' }],
+    [
+      { action: 'setCardHighlight', cardId: 'task1', highlightLine: 1 },
+      { action: 'highlightLine', lineId: 'line-5' },
+    ],
     [
       { action: 'setStatus', cardId: 'task1', statusId: 'suspended' },
       { action: 'setGlow', cardId: 'task1', glow: false },
@@ -147,36 +203,49 @@ const basicCoroutines: AnimationDefinition = {
       { action: 'removeCard', cardId: 'timer1' },
       { action: 'setStatus', cardId: 'task1', statusId: 'running' },
       { action: 'setGlow', cardId: 'task1', glow: true },
+      { action: 'setCardHighlight', cardId: 'task1', highlightLine: 2 },
       { action: 'highlightLine', lineId: 'line-6' },
       { action: 'addOutput', id: 'o2', text: 'gpt-4 responded', time: '1.0s' },
     ],
-    [{ action: 'highlightLine', lineId: 'line-7' }],
+    [
+      { action: 'setCardHighlight', cardId: 'task1', highlightLine: 3 },
+      { action: 'highlightLine', lineId: 'line-7' },
+    ],
     [
       { action: 'setStatus', cardId: 'task1', statusId: 'complete' },
       { action: 'setGlow', cardId: 'task1', glow: false },
       { action: 'removeCard', cardId: 'task1' },
     ],
 
-    // Phase: First Result Returns (steps 14–16)
+    // Phase: First Result Returns (steps 14–16) — main() running again
     [
       { action: 'setStatus', cardId: 'main', statusId: 'running' },
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 3 },
       { action: 'highlightLine', lineId: 'line-13' },
     ],
     [
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 4 },
       { action: 'highlightLine', lineId: 'line-14' },
       { action: 'addOutput', id: 'o3', text: 'GPT-4 done', time: '1.0s' },
     ],
-    [{ action: 'highlightLine', lineId: 'line-15' }],
+    [
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 5 },
+      { action: 'highlightLine', lineId: 'line-15' },
+    ],
 
-    // Phase: Awaiting task2 — call_llm("claude") (steps 17–22)
+    // Phase: Awaiting task2 — call_llm("claude") running on event loop
     [
       { action: 'setStatus', cardId: 'main', statusId: 'suspended' },
       { action: 'addCard', columnId: 'loop', id: 'task2', title: 'call_llm("claude")', statusId: 'running' },
+      { action: 'setCardCode', cardId: 'task2', lines: CALL_LLM_SNIPPET, highlightLine: 0 },
       { action: 'setGlow', cardId: 'task2', glow: true },
       { action: 'highlightLine', lineId: 'line-4' },
       { action: 'addOutput', id: 'o4', text: 'Calling claude...', time: '1.0s' },
     ],
-    [{ action: 'highlightLine', lineId: 'line-5' }],
+    [
+      { action: 'setCardHighlight', cardId: 'task2', highlightLine: 1 },
+      { action: 'highlightLine', lineId: 'line-5' },
+    ],
     [
       { action: 'setStatus', cardId: 'task2', statusId: 'suspended' },
       { action: 'setGlow', cardId: 'task2', glow: false },
@@ -186,31 +255,42 @@ const basicCoroutines: AnimationDefinition = {
       { action: 'removeCard', cardId: 'timer2' },
       { action: 'setStatus', cardId: 'task2', statusId: 'running' },
       { action: 'setGlow', cardId: 'task2', glow: true },
+      { action: 'setCardHighlight', cardId: 'task2', highlightLine: 2 },
       { action: 'highlightLine', lineId: 'line-6' },
       { action: 'addOutput', id: 'o5', text: 'claude responded', time: '3.0s' },
     ],
-    [{ action: 'highlightLine', lineId: 'line-7' }],
+    [
+      { action: 'setCardHighlight', cardId: 'task2', highlightLine: 3 },
+      { action: 'highlightLine', lineId: 'line-7' },
+    ],
     [
       { action: 'setStatus', cardId: 'task2', statusId: 'complete' },
       { action: 'setGlow', cardId: 'task2', glow: false },
       { action: 'removeCard', cardId: 'task2' },
     ],
 
-    // Phase: Completion (steps 23–28)
+    // Phase: Completion (steps 23–28) — main() running to end
     [
       { action: 'setStatus', cardId: 'main', statusId: 'running' },
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 5 },
       { action: 'highlightLine', lineId: 'line-15' },
     ],
     [
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 6 },
       { action: 'highlightLine', lineId: 'line-16' },
       { action: 'addOutput', id: 'o6', text: 'Claude done', time: '3.0s' },
     ],
-    [{ action: 'highlightLine', lineId: 'line-17' }],
+    [
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 7 },
+      { action: 'highlightLine', lineId: 'line-17' },
+    ],
     [
       { action: 'setStatus', cardId: 'main', statusId: 'complete' },
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 9 },
       { action: 'highlightLine', lineId: 'line-20' },
     ],
     [
+      { action: 'setCardHighlight', cardId: 'main', highlightLine: 10 },
       { action: 'highlightLine', lineId: 'line-21' },
       { action: 'addOutput', id: 'o7', text: "['Response from gpt-4', 'Response from claude']", time: '3.0s' },
     ],

@@ -151,7 +151,7 @@ const waitFirst: AnimationDefinition = {
     // Phase: Start Event Loop (step 3)
     [
       { action: 'highlightLine', lineId: 'line-26' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase: Create All 3 Tasks (steps 4–7)

@@ -12,7 +12,7 @@ export function AnimationViewer({ definition }: Props) {
     useStepper(definition)
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950 p-4">
+    <div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex min-h-[480px] flex-col gap-3 md:flex-row">
         {definition.columns.map((col) => (
           <Column
@@ -27,7 +27,7 @@ export function AnimationViewer({ definition }: Props) {
         ))}
       </div>
 
-      <div className="mt-4">
+      <div className="sticky bottom-0 left-0 right-0 z-10 mt-4 -mx-4 -mb-4 rounded-b-xl border-t border-border bg-surface px-4 py-3">
         <Stepper
           currentStep={currentStep}
           totalSteps={totalSteps}

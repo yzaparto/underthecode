@@ -153,7 +153,7 @@ const semaphore: AnimationDefinition = {
     // Phase: Start Event Loop (step 4)
     [
       { action: 'highlightLine', lineId: 'line-24' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase: Create 4 Tasks (steps 5–8)

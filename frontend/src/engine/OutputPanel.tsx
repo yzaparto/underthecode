@@ -6,20 +6,20 @@ interface Props {
 
 export function OutputPanel({ lines }: Props) {
   return (
-    <pre className="mt-2 h-40 overflow-auto rounded-lg bg-gray-950 p-4 text-xs leading-relaxed">
+    <pre className="mt-2 h-40 overflow-auto rounded-lg border border-border bg-bg p-4 text-xs leading-relaxed">
       <code>
-        <span className="text-gray-500">Output:</span>
+        <span className="text-muted">Output:</span>
         {'\n'}
         {lines.map((line) => (
-          <span key={line.id} className="text-green-400">
+          <span key={line.id} className="text-green">
             {line.time != null && (
-              <span className="text-gray-500">[{line.time}] </span>
+              <span className="text-muted">[{line.time}] </span>
             )}
             {line.text}
             {'\n'}
           </span>
         ))}
-        {lines.length === 0 && <span className="text-gray-600">{'\u00A0\n'}</span>}
+        {lines.length === 0 && <span className="text-muted">{'\u00A0\n'}</span>}
       </code>
     </pre>
   )

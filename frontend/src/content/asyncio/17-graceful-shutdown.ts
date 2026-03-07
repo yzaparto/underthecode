@@ -153,7 +153,7 @@ const gracefulShutdown: AnimationDefinition = {
     // Phase: Start Event Loop (step 3)
     [
       { action: 'highlightLine', lineId: 'line-27' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase: Create Workers (steps 4–6)

@@ -140,7 +140,7 @@ const animation: AnimationDefinition = {
 
     [{ action: 'highlightLine', lineId: 'line-1' }],
 
-    [{ action: 'highlightLine', lineId: 'line-33' }, { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'ready' }],
+    [{ action: 'highlightLine', lineId: 'line-33' }, { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'ready' }],
 
     [{ action: 'highlightLine', lineId: 'line-11' }, { action: 'setStatus', cardId: 'main', statusId: 'running' }],
 

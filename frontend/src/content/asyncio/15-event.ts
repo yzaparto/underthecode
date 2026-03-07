@@ -163,7 +163,7 @@ const event: AnimationDefinition = {
     // Phase: Start Event Loop (step 4)
     [
       { action: 'highlightLine', lineId: 'line-27' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase: Create Event and TaskGroup (steps 5–7)

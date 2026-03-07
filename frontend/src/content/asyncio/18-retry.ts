@@ -154,7 +154,7 @@ const retry: AnimationDefinition = {
     // Phase: Start Event Loop (step 4)
     [
       { action: 'highlightLine', lineId: 'line-26' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
 
     // Phase: Enter main, call retry (steps 5–6)

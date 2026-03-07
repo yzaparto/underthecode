@@ -15,11 +15,11 @@ export function Column({ column, state, statuses, sourceCode }: Props) {
   const cards = state.cards.filter((c) => c.columnId === column.id)
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-gray-900 p-4">
-      <h2 className="mb-3 text-center text-sm font-semibold uppercase tracking-wider text-gray-400">
+    <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-surface-2 p-4">
+      <h2 className="mb-3 text-center text-sm font-semibold uppercase tracking-wider text-muted">
         {column.title}
       </h2>
-      <hr className="mb-4 border-gray-800" />
+      <hr className="mb-4 border-border" />
 
       {column.hasCodePanel && sourceCode && (
         <CodePanel sourceCode={sourceCode} highlights={state.codeHighlights} />

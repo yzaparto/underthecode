@@ -131,7 +131,7 @@ const createTask: AnimationDefinition = {
     // Phase: Scheduling Concurrent Tasks (steps 4–7)
     [
       { action: 'highlightLine', lineId: 'line-10' },
-      { action: 'addCard', columnId: 'code', id: 'main', title: 'main()', statusId: 'running' },
+      { action: 'addCard', columnId: 'loop', id: 'main', title: 'main()', statusId: 'running' },
     ],
     [
       { action: 'highlightLine', lineId: 'line-11' },

@@ -54,6 +54,35 @@ function applyAction(state: AnimationState, action: StepAction): AnimationState 
         ),
       }
 
+    case 'setCardCode': {
+      const highlightLine =
+        action.highlightLine !== undefined ? String(action.highlightLine) : undefined
+      return {
+        ...state,
+        cards: state.cards.map((c) =>
+          c.id === action.cardId
+            ? { ...c, code: { lines: action.lines, highlightLine } }
+            : c,
+        ),
+      }
+    }
+
+    case 'setCardHighlight':
+      return {
+        ...state,
+        cards: state.cards.map((c) =>
+          c.id === action.cardId && c.code
+            ? {
+                ...c,
+                code: {
+                  ...c.code,
+                  highlightLine: action.highlightLine !== null ? String(action.highlightLine) : undefined,
+                },
+              }
+            : c,
+        ),
+      }
+
     case 'addOutput':
       return {
         ...state,
