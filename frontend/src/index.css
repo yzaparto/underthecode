@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+code, pre, kbd, samp {
+  font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Source Code Pro', Menlo, Consolas, 'Courier New', monospace;
+}
