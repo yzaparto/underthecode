@@ -8,11 +8,16 @@ interface Props {
 }
 
 export function AnimationViewer({ definition }: Props) {
-  const { state, currentStep, totalSteps, currentPhase, next, prev } =
+  const { state, currentStep, totalSteps, currentPhase, next, prev, handleArrowKey } =
     useStepper(definition)
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div
+      tabIndex={0}
+      onClick={(e) => e.currentTarget.focus()}
+      onKeyDown={(e) => handleArrowKey(e.key)}
+      className="rounded-xl border border-border bg-surface p-4"
+    >
       <div className="flex min-h-[480px] flex-col gap-3 md:flex-row">
         {definition.columns.map((col) => (
           <Column

@@ -10,6 +10,7 @@ export interface StepperState {
   next: () => void
   prev: () => void
   goTo: (n: number) => void
+  handleArrowKey: (key: string) => void
 }
 
 export function useStepper(definition: AnimationDefinition): StepperState {
@@ -37,14 +38,13 @@ export function useStepper(definition: AnimationDefinition): StepperState {
     [],
   )
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') next()
-      else if (e.key === 'ArrowLeft') prev()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [next, prev])
+  const handleArrowKey = useCallback(
+    (key: string) => {
+      if (key === 'ArrowRight') next()
+      else if (key === 'ArrowLeft') prev()
+    },
+    [next, prev],
+  )
 
   return {
     state: snapshots[currentStep],
@@ -54,5 +54,6 @@ export function useStepper(definition: AnimationDefinition): StepperState {
     next,
     prev,
     goTo,
+    handleArrowKey,
   }
 }
