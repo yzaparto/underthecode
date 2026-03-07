@@ -1,0 +1,25 @@
+# IDE and tooling
+.cursor/
+.entire/
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Build outputs
+dist/
+*.egg-info/
+.eggs/
+
+# Environment
+.env
+.env.local
+*.local
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Light theme color options</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      padding: 2rem;
+      background: #1a1a1a;
+      color: #e5e5e5;
+      min-height: 100vh;
+    }
+    h1 { font-size: 1.25rem; margin-bottom: 1.5rem; font-weight: 600; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      max-width: 900px;
+    }
+    .swatch {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .swatch-color {
+      height: 120px;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    .swatch-info {
+      padding: 0.75rem;
+      background: #262626;
+      font-size: 0.8rem;
+    }
+    .swatch-name { font-weight: 600; margin-bottom: 0.25rem; }
+    .swatch-hex { color: #a3a3a3; font-family: ui-monospace, monospace; }
+    .subdued { font-size: 0.75rem; color: #737373; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Light theme – background options (yellowish white / premium)</h1>
+  <div class="grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FFFBEB;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Amber 50</div>
+        <div class="swatch-hex">#FFFBEB</div>
+        <div>Tailwind: bg-amber-50</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FFFBF5;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Warm cream</div>
+        <div class="swatch-hex">#FFFBF5</div>
+        <div>Custom (floral white + warmth)</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FEF7ED;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Soft paper</div>
+        <div class="swatch-hex">#FEF7ED</div>
+        <div>Tailwind: amber-100 tint</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FDF8F3;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Parchment</div>
+        <div class="swatch-hex">#FDF8F3</div>
+        <div>Peach cream</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FFFAF0;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Floral white</div>
+        <div class="swatch-hex">#FFFAF0</div>
+        <div>CSS floralwhite-ish</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FEFCE8;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Yellow 50</div>
+        <div class="swatch-hex">#FEFCE8</div>
+        <div>Tailwind: bg-yellow-50</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FFFBEB;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">+ Sample text</div>
+        <div class="swatch-hex">#FFFBEB</div>
+        <div style="color: #44403c; margin-top: 4px;">The quick brown fox (stone-700)</div>
+      </div>
+    </div>
+  </div>
+  <p class="subdued">Open this file in a browser to compare. Tell me which name (or hex) you want for the main light background.</p>
+</body>
+</html>
