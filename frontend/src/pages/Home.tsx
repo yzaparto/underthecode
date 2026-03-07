@@ -28,6 +28,23 @@ export function Home() {
             </div>
           </Link>
         </li>
+        <li>
+          <Link
+            to="/articles/python-streaming"
+            className="group block overflow-hidden rounded-lg border border-border transition-colors hover:border-border hover:bg-surface-2"
+          >
+            <div className="p-5">
+              <span className="text-sm font-medium text-brand">Python</span>
+              <h2 className="mt-1 text-xl font-semibold text-text">
+                Python Streaming: Generators In Depth
+              </h2>
+              <p className="mt-2 text-sm text-muted">
+                Step-by-step interactive animations showing how generators, iterators,
+                and streaming work under the hood in Python.
+              </p>
+            </div>
+          </Link>
+        </li>
       </ul>
     </main>
   )

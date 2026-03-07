@@ -4,6 +4,8 @@ import { Header } from './components/layout/Header'
 import { Home } from './pages/Home'
 import { AsyncioConcurrency } from './pages/AsyncioConcurrency'
 import { AnimationPage } from './pages/AnimationPage'
+import { PythonStreaming } from './pages/PythonStreaming'
+import { StreamingAnimationPage } from './pages/StreamingAnimationPage'
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/articles/python-asyncio" element={<AsyncioConcurrency />} />
             <Route path="/articles/python-asyncio/:step" element={<AnimationPage />} />
+            <Route path="/articles/python-streaming" element={<PythonStreaming />} />
+            <Route path="/articles/python-streaming/:step" element={<StreamingAnimationPage />} />
           </Routes>
         </div>
       </BrowserRouter>
