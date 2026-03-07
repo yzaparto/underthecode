@@ -105,7 +105,7 @@ const exceptionGroup: AnimationDefinition = {
     {
       title: 'Coder Fails — TaskGroup Aborts',
       explanation:
-        '• All timers complete after 1 second\n• Coder hits `raise ValueError("coder failed!")` — its task errors out\n• TaskGroup calls `_abort()` — researcher and reviewer are **cancelled**\n• They never reach their "done" print statements',
+        '• All timers complete after 1 second\n• Coder hits `raise ValueError("coder failed!")` — its task errors out\n• TaskGroup initiates abort — but researcher and reviewer already finished their sleep\n• The exception propagates to the `except*` handler',
       startStep: 10,
       endStep: 13,
     },
