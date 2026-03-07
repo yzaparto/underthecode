@@ -474,9 +474,9 @@ def test_14_exception_group():
     print("TEST 14: Error Handling with ExceptionGroup")
     print("="*60)
     
-    async def call_agent(name, should_fail=False):
+    async def call_agent(name, delay, should_fail=False):
         print(f"[{timestamp()}] Agent {name} working...")
-        await asyncio.sleep(1)
+        await asyncio.sleep(delay)
         if should_fail:
             raise ValueError(f"{name} failed!")
         print(f"[{timestamp()}] Agent {name} done")
@@ -485,15 +485,15 @@ def test_14_exception_group():
     async def main():
         try:
             async with asyncio.TaskGroup() as tg:
-                tg.create_task(call_agent("researcher"))
-                tg.create_task(call_agent("coder", True))
-                tg.create_task(call_agent("reviewer"))
+                tg.create_task(call_agent("researcher", 2))
+                tg.create_task(call_agent("coder", 0.5, True))
+                tg.create_task(call_agent("reviewer", 1.5))
         except* ValueError as eg:
             print(f"[{timestamp()}] Caught: {eg.exceptions}")
         print(f"[{timestamp()}] Continuing after error")
     
     asyncio.run(main())
-    print("EXPECTED: TaskGroup cancels other tasks when one fails")
+    print("EXPECTED: Coder fails at 0.5s, cancels researcher/reviewer (no 'done')")
 
 # ============================================================================
 # Animation 15: Event

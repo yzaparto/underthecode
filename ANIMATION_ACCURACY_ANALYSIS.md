@@ -7,7 +7,7 @@ I analyzed all 20 asyncio animations for factual accuracy by:
 2. Running the actual Python code to verify the depicted behavior
 3. Checking edge cases and timing behavior
 
-**Result: 19 out of 20 animations are fully accurate. 1 animation has a minor explanation issue.**
+**Result: All 20 animations are fully accurate** and correctly represent Python's asyncio behavior.
 
 ---
 
@@ -116,33 +116,24 @@ I analyzed all 20 asyncio animations for factual accuracy by:
 - Tokens arrive at 0.5s intervals
 - Animation correctly shows the suspend/resume cycle
 
-### ⚠️ Animation 14: Error Handling with ExceptionGroup
-**Status: MINOR EXPLANATION ISSUE**
+### ✅ Animation 14: Error Handling with ExceptionGroup
+**Status: FULLY ACCURATE (Updated)**
 
-**Issue**: The animation's explanation states:
-> "TaskGroup calls `_abort()` — researcher and reviewer are **cancelled**"
-> "They never reach their 'done' print statements"
+The animation now uses different sleep durations to clearly demonstrate TaskGroup cancellation:
+- researcher: 2s (long task)
+- coder: 0.5s then fails (fails early)  
+- reviewer: 1.5s (medium task)
 
-**Actual behavior**: In the animation's code, all three tasks have the **same** `await asyncio.sleep(1)`. When the timers fire, all three tasks wake up at the same instant. The event loop runs them in order:
-- researcher prints "done" 
-- coder raises ValueError
-- reviewer prints "done"
+When coder fails at 0.5s, researcher and reviewer are **still sleeping**. TaskGroup cancels them immediately — they never reach their "done" print statements. This clearly demonstrates the key concept: one failure aborts all sibling tasks.
 
-The tasks complete their sleep **before** the cancellation propagates. My tests confirm:
+Test output confirms:
 ```
-[1.0s] Agent researcher done    ← DOES print "done"
-[1.0s] Agent reviewer done      ← DOES print "done"
-[1.0s] Caught: (ValueError('coder failed!'),)
+[0.0s] Agent researcher working...
+[0.0s] Agent coder working...
+[0.0s] Agent reviewer working...
+[0.5s] Caught: (ValueError('coder failed!'),)   ← researcher/reviewer cancelled, no "done"
+[0.5s] Continuing after error
 ```
-
-**The visual animation is correct in showing 1.0s timing**, but the explanation text is misleading. The tasks aren't cancelled - they complete.
-
-**If coder failed earlier** (e.g., at 0.5s while others are still sleeping), THEN researcher and reviewer would be cancelled and wouldn't print "done".
-
-**Recommendation**: Update the explanation to say:
-> "All three tasks complete their 1-second sleep at the same time. Coder raises ValueError. Since researcher and reviewer have already completed their sleep, they may or may not print 'done' depending on event loop scheduling order. In practice, they often do print 'done' before the cancellation propagates."
-
-Or change the code so tasks have different sleep durations to demonstrate actual cancellation.
 
 ### ✅ Animation 15: Event: Coordinating Agents
 **Status: FULLY ACCURATE**
@@ -197,7 +188,7 @@ Or change the code so tasks have different sleep durations to demonstrate actual
 
 ## Conclusion
 
-The animations are **highly accurate** representations of Python's asyncio behavior. They correctly demonstrate:
+All 20 animations are **fully accurate** representations of Python's asyncio behavior. They correctly demonstrate:
 
 1. The difference between sync and async execution
 2. That `async/await` alone doesn't create concurrency - `create_task()` is needed
@@ -207,4 +198,4 @@ The animations are **highly accurate** representations of Python's asyncio behav
 6. Producer/consumer patterns with queues
 7. Structured concurrency with TaskGroup
 
-The only issue found is a minor explanation inaccuracy in Animation 14 regarding when tasks get cancelled during TaskGroup error handling. The visual timing is correct, but the text explanation could be clearer about the race between task completion and cancellation.
+Animation 14 was updated to use different sleep durations (0.5s, 1.5s, 2s) to clearly demonstrate TaskGroup cancellation behavior when one task fails before others complete.
