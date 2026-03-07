@@ -1,132 +1,131 @@
 import type { AnimationDefinition } from '../../engine/types'
 import { EMPTY_STATE } from '../../engine/types'
-import { streamingColumns, streamingStatuses } from './layout'
+import { pipelineColumns, basicsStatuses } from './layouts'
 
 const sourceCode = `import time
-from collections import deque
 
 
 def fast_producer():
-    """Produces data faster than consumer."""
-    for i in range(10):
+    for i in range(5):
         print(f"Produced: {i}")
         yield i
 
 
 def slow_consumer(items):
-    """Consumes data slowly."""
     for item in items:
-        time.sleep(0.3)  # Slow processing
-        print(f"Consumed: {item}")
-        yield item
+        print(f"  Processing {item}...")
+        time.sleep(0.5)  # Slow!
+        yield f"Done: {item}"
 
 
-# Natural backpressure with generators
+# The magic: consumer controls the pace!
 producer = fast_producer()
 consumer = slow_consumer(producer)
 
-# Pull-based: consumer controls the pace
 for result in consumer:
-    if result >= 3:
-        break`
+    print(result)`
 
 const backpressure: AnimationDefinition = {
-  id: 'streaming-backpressure',
+  id: 'streaming-16-backpressure',
   title: 'Backpressure',
-  columns: streamingColumns,
-  statuses: streamingStatuses,
+  columns: pipelineColumns,
+  statuses: basicsStatuses,
   sourceCode,
   initialState: EMPTY_STATE,
 
   phases: [
     {
-      title: 'Define Producer and Consumer',
-      explanation: '• `fast_producer()` yields values quickly\n• `slow_consumer()` processes each value slowly (0.3s delay)\n• In a push model, the producer would overwhelm the consumer',
+      title: 'The Problem',
+      explanation: '• Producer is FAST (instant)\n• Consumer is SLOW (0.5s per item)\n• Without control, producer would flood consumer!',
       startStep: 0,
       endStep: 1,
     },
     {
-      title: 'Build Pipeline',
-      explanation: '• We connect producer to consumer\n• Nothing runs yet — generators are lazy\n• The consumer wraps the producer',
+      title: 'Build the Pipeline',
+      explanation: '• Connect fast producer → slow consumer\n• With generators, consumer PULLS from producer\n• Producer can\'t run ahead!',
       startStep: 2,
       endStep: 3,
     },
     {
-      title: 'Pull-Based Flow',
-      explanation: '• The `for` loop pulls from consumer\n• Consumer pulls from producer only when ready\n• Producer is blocked waiting for consumer — natural backpressure',
+      title: 'Backpressure in Action',
+      explanation: '• Consumer asks for item → producer provides ONE\n• Consumer processes (slow) → producer WAITS\n• No buffering, no overflow, natural flow control!',
       startStep: 4,
       endStep: 11,
-    },
-    {
-      title: 'Early Termination',
-      explanation: '• We break after processing 4 items (0, 1, 2, 3)\n• Producer never produces items 4-9\n• Pull-based streaming = automatic flow control',
-      startStep: 12,
-      endStep: 13,
     },
   ],
 
   steps: [
-    [{ action: 'highlightLine', lineId: 'line-4' }],
-    [{ action: 'highlightLine', lineId: 'line-11' }],
     [
-      { action: 'highlightLine', lineId: 'line-19' },
-      { action: 'addCard', columnId: 'generator', id: 'producer', title: 'fast_producer()', statusId: 'ready' },
+      { action: 'highlightLine', lineId: 'line-3' },
+      { action: 'addCard', columnId: 'pipeline', id: 'fast', title: '🚀 fast_producer() — instant', statusId: 'running' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-9' },
+      { action: 'addCard', columnId: 'pipeline', id: 'slow', title: '🐢 slow_consumer() — 0.5s each', statusId: 'paused' },
+      { action: 'addCard', columnId: 'pipeline', id: 'problem', title: '❓ How to prevent flooding?', statusId: 'waiting' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-17' },
+      { action: 'removeCard', cardId: 'problem' },
+      { action: 'setStatus', cardId: 'fast', statusId: 'created' },
+      { action: 'setStatus', cardId: 'slow', statusId: 'created' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-18' },
+      { action: 'addCard', columnId: 'pipeline', id: 'key', title: '🔑 Pull-based = automatic backpressure!', statusId: 'receiving' },
     ],
     [
       { action: 'highlightLine', lineId: 'line-20' },
-      { action: 'addCard', columnId: 'generator', id: 'consumer', title: 'slow_consumer(producer)', statusId: 'ready' },
+      { action: 'removeCard', cardId: 'key' },
+      { action: 'setStatus', cardId: 'slow', statusId: 'running' },
+      { action: 'setGlow', cardId: 'slow', glow: true },
+      { action: 'addCard', columnId: 'pipeline', id: 'pull1', title: '📥 Consumer pulls...', statusId: 'running' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-23' },
-      { action: 'setStatus', cardId: 'consumer', statusId: 'running' },
-      { action: 'setGlow', cardId: 'consumer', glow: true },
-    ],
-    [
-      { action: 'setStatus', cardId: 'producer', statusId: 'running' },
-      { action: 'setGlow', cardId: 'producer', glow: true },
+      { action: 'setStatus', cardId: 'fast', statusId: 'running' },
+      { action: 'setGlow', cardId: 'fast', glow: true },
+      { action: 'removeCard', cardId: 'pull1' },
       { action: 'addOutput', id: 'o1', text: 'Produced: 0', time: '0.0s' },
+      { action: 'addCard', columnId: 'pipeline', id: 'p1', title: '📤 Producer yields 0', statusId: 'value' },
     ],
     [
-      { action: 'setStatus', cardId: 'producer', statusId: 'suspended' },
-      { action: 'setGlow', cardId: 'producer', glow: false },
-      { action: 'addCard', columnId: 'memory', id: 'buf', title: 'Processing: 0', statusId: 'buffered', hasSpinner: true },
-      { action: 'addOutput', id: 'o2', text: '(consumer processing...)', time: '0.0s' },
+      { action: 'setGlow', cardId: 'fast', glow: false },
+      { action: 'setStatus', cardId: 'fast', statusId: 'paused' },
+      { action: 'removeCard', cardId: 'p1' },
+      { action: 'addOutput', id: 'o2', text: '  Processing 0...', time: '0.0s' },
+      { action: 'addCard', columnId: 'pipeline', id: 'wait1', title: '⏳ Consumer processing... (0.5s)', statusId: 'running', hasSpinner: true },
+      { action: 'addCard', columnId: 'pipeline', id: 'blocked', title: '🛑 Producer BLOCKED waiting', statusId: 'paused' },
     ],
     [
-      { action: 'setSpinner', cardId: 'buf', hasSpinner: false },
-      { action: 'addOutput', id: 'o3', text: 'Consumed: 0', time: '0.3s' },
-      { action: 'setStatus', cardId: 'consumer', statusId: 'yielding' },
+      { action: 'removeCard', cardId: 'wait1' },
+      { action: 'removeCard', cardId: 'blocked' },
+      { action: 'addOutput', id: 'o3', text: 'Done: 0', time: '0.5s' },
     ],
     [
-      { action: 'removeCard', cardId: 'buf' },
-      { action: 'setStatus', cardId: 'consumer', statusId: 'running' },
-      { action: 'setStatus', cardId: 'producer', statusId: 'running' },
-      { action: 'setGlow', cardId: 'producer', glow: true },
-      { action: 'addOutput', id: 'o4', text: 'Produced: 1', time: '0.3s' },
+      { action: 'setStatus', cardId: 'fast', statusId: 'running' },
+      { action: 'setGlow', cardId: 'fast', glow: true },
+      { action: 'addOutput', id: 'o4', text: 'Produced: 1', time: '0.5s' },
+      { action: 'addCard', columnId: 'pipeline', id: 'p2', title: '📤 Producer yields 1', statusId: 'value' },
     ],
     [
-      { action: 'setStatus', cardId: 'producer', statusId: 'suspended' },
-      { action: 'setGlow', cardId: 'producer', glow: false },
-      { action: 'addCard', columnId: 'memory', id: 'buf2', title: 'Processing: 1', statusId: 'buffered', hasSpinner: true },
+      { action: 'setGlow', cardId: 'fast', glow: false },
+      { action: 'setStatus', cardId: 'fast', statusId: 'paused' },
+      { action: 'removeCard', cardId: 'p2' },
+      { action: 'addOutput', id: 'o5', text: '  Processing 1...', time: '0.5s' },
+      { action: 'addCard', columnId: 'pipeline', id: 'wait2', title: '⏳ Consumer processing... (0.5s)', statusId: 'running', hasSpinner: true },
     ],
     [
-      { action: 'setSpinner', cardId: 'buf2', hasSpinner: false },
-      { action: 'addOutput', id: 'o5', text: 'Consumed: 1', time: '0.6s' },
-      { action: 'removeCard', cardId: 'buf2' },
-      { action: 'addOutput', id: 'o6', text: 'Produced: 2 → Consumed: 2', time: '0.9s' },
+      { action: 'removeCard', cardId: 'wait2' },
+      { action: 'addOutput', id: 'o6', text: 'Done: 1', time: '1.0s' },
+      { action: 'addCard', columnId: 'pipeline', id: 'pattern', title: '🔄 Pattern: pull → produce → process → repeat', statusId: 'receiving' },
     ],
     [
-      { action: 'addOutput', id: 'o7', text: 'Produced: 3 → Consumed: 3', time: '1.2s' },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-25' },
-      { action: 'addOutput', id: 'o8', text: 'break! (result >= 3)', time: '1.2s' },
-    ],
-    [
-      { action: 'setStatus', cardId: 'producer', statusId: 'exhausted' },
-      { action: 'setStatus', cardId: 'consumer', statusId: 'exhausted' },
-      { action: 'setGlow', cardId: 'consumer', glow: false },
-      { action: 'addOutput', id: 'o9', text: 'Items 4-9 never produced!', time: '1.2s' },
+      { action: 'setStatus', cardId: 'fast', statusId: 'done' },
+      { action: 'setStatus', cardId: 'slow', statusId: 'done' },
+      { action: 'setGlow', cardId: 'slow', glow: false },
+      { action: 'removeCard', cardId: 'pattern' },
+      { action: 'addCard', columnId: 'pipeline', id: 'win', title: '✅ No buffer overflow!', statusId: 'done' },
+      { action: 'addCard', columnId: 'pipeline', id: 'win2', title: '✅ Natural flow control!', statusId: 'receiving' },
       { action: 'clearHighlights' },
     ],
   ],

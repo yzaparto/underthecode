@@ -159,7 +159,7 @@ export function StreamingAnimationPage() {
             to={`/articles/python-streaming/${prev}`}
             className="rounded-lg border border-border px-5 py-3 text-sm text-muted transition-colors hover:border-border hover:bg-surface-2"
           >
-            &larr; {streamingAnimations[prev - 1].title}
+            &larr; {streamingAnimations[index - 1].title}
           </Link>
         ) : (
           <div />
@@ -169,7 +169,7 @@ export function StreamingAnimationPage() {
             to={`/articles/python-streaming/${next}`}
             className="rounded-lg border border-border px-5 py-3 text-sm text-muted transition-colors hover:border-border hover:bg-surface-2"
           >
-            {streamingAnimations[next - 1].title} &rarr;
+            {streamingAnimations[index + 1].title} &rarr;
           </Link>
         ) : (
           <Link

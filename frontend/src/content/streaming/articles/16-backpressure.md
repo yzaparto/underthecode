@@ -1,63 +1,42 @@
-## Introduction
+# Introduction
 
-Backpressure is the mechanism that prevents fast producers from overwhelming slow consumers. In Python generators, backpressure is automatic: the producer cannot advance until the consumer pulls the next value. This pull-based model naturally balances production and consumption rates.
+**Backpressure** is automatic flow control where the consumer controls the pace of production. With generators, the producer can't outrun the consumer — it only produces when asked.
 
-This animation shows a fast producer and slow consumer connected through generators. The producer is blocked between items, waiting for the consumer to request the next value. When the consumer breaks early, items that were never needed are never produced.
+# Why This Matters
 
-## Why This Matters
+Without backpressure, a fast producer can overwhelm a slow consumer, causing memory to grow unboundedly (buffering) or data to be lost (dropping). Generator-based pipelines get backpressure for free.
 
-Without backpressure, fast producers flood slow consumers with data. Memory fills with unprocessed items. Systems become unstable. Backpressure prevents this by making production wait for consumption.
+# What Just Happened
 
-Generators provide backpressure for free. The pull-based model means the consumer controls the pace. There is no buffer to overflow, no queue to manage, no explicit flow control code. The architecture itself enforces balance.
+The animation showed:
 
-Understanding backpressure is essential for building robust streaming systems. Whether using generators, async queues, or distributed streaming platforms, the concept is the same: consumers must be able to slow down producers.
+1. **Fast producer**: Could yield instantly
+2. **Slow consumer**: Took 0.5s per item
+3. **Result**: Producer was automatically throttled to consumer's pace
 
-## When to Use This Pattern
+The consumer pulled one item, processed it slowly, then pulled the next. The producer couldn't run ahead — it was blocked at `yield` until the consumer asked for more.
 
-- Connecting producers and consumers with different processing speeds
-- Processing data from fast sources (network, file) with slow operations (ML, DB writes)
-- Building pipelines where any stage might be the bottleneck
-- Preventing memory exhaustion from unbounded buffering
-- Implementing rate limiting based on downstream capacity
-- Any streaming architecture where stages have different throughputs
+# Keep in Mind
 
-## What Just Happened
+- Generators are **pull-based**: consumer requests values
+- Producer is paused at `yield` until consumer calls `next()`
+- No explicit buffering or rate limiting needed
 
-The fast producer and slow consumer were connected. When the loop started, the consumer pulled from its input. This triggered the producer to yield one item. The producer then blocked, suspended at its yield point.
+# Common Pitfalls
 
-The consumer processed the item slowly (0.3s). Only then did it pull the next value, unblocking the producer for another iteration. Production and consumption were synchronized, with the consumer controlling the pace.
+- **Building push-based systems when pull would work** — Generators give you backpressure automatically
+- **Adding buffering when you don't need it** — Can mask the natural flow control
 
-When we broke out after 4 items, the remaining 6 items were never produced. There was no wasted work, no discarded data, no buffer to drain.
+# Where to Incorporate This
 
-## Keep in Mind
+Backpressure matters for:
 
-- Generators provide pull-based (consumer-controlled) flow
-- The producer blocks at `yield` until the consumer calls `next()`
-- There is no buffer between stages — one item at a time
-- Early termination prevents computation of unneeded items
-- The slowest stage determines overall pipeline throughput
-- This is fundamentally different from push-based systems (callbacks, events)
+- Processing streams of data
+- Producer/consumer patterns
+- ETL pipelines
+- Any system where production and consumption rates differ
 
-## Common Pitfalls
+# Related Patterns
 
-- Using threads/async without proper backpressure (leads to unbounded queues)
-- Building intermediate lists that buffer unboundedly
-- Assuming all streaming patterns have automatic backpressure (they do not)
-- Ignoring backpressure when connecting to external systems (databases, APIs)
-- Making all stages async when synchronous generators would suffice
-
-## Where to Incorporate This
-
-- ETL pipelines with rate-limited destination APIs
-- Log processing with expensive analysis stages
-- Data ingestion with validation and transformation
-- Machine learning pipelines with slow inference
-- Any producer-consumer pattern with mismatched rates
-- Streaming architectures that must not drop data
-
-## Related Patterns
-
-- Buffering strategies (animation 17) shows explicit buffering for throughput
-- Async generators (animation 19) extend this to async with queues
-- Chaining generators (animation 12) shows multi-stage pipelines
-- File streaming (animation 14) shows backpressure with I/O
+- **Chaining Generators** (Animation 13) — Pipelines with natural backpressure
+- **Buffering & Batching** (Animation 18) — When you DO want some buffering

@@ -13,63 +13,44 @@ export interface StreamingArticle {
   }
 }
 
-const sectionMap: Record<string, [keyof StreamingArticle, string]> = {
-  'Introduction':              ['before', 'intro'],
-  'Why This Matters':          ['before', 'whyUseful'],
-  'When to Use This Pattern':  ['before', 'whenToUse'],
-  'What Just Happened':        ['after', 'walkthrough'],
-  'Keep in Mind':              ['after', 'keepInMind'],
-  'Common Pitfalls':           ['after', 'pitfalls'],
-  'Where to Incorporate This': ['after', 'realWorld'],
-  'Related Patterns':          ['after', 'relatedPatterns'],
+function parseMarkdownSection(content: string, heading: string): string[] {
+  const regex = new RegExp(`# ${heading}\\n([\\s\\S]*?)(?=\\n# |$)`, 'i')
+  const match = content.match(regex)
+  if (!match) return []
+  
+  return match[1]
+    .trim()
+    .split('\n\n')
+    .map(p => p.trim())
+    .filter(p => p.length > 0)
 }
 
-const bulletSections = new Set([
-  'whenToUse', 'keepInMind', 'pitfalls', 'realWorld', 'relatedPatterns',
-])
-
-function parseMarkdown(raw: string): StreamingArticle {
-  const article: StreamingArticle = {
-    before: { intro: [], whyUseful: [], whenToUse: [] },
-    after: { walkthrough: [], keepInMind: [], pitfalls: [], realWorld: [], relatedPatterns: [] },
+function parseMarkdown(content: string): StreamingArticle {
+  return {
+    before: {
+      intro: parseMarkdownSection(content, 'Introduction'),
+      whyUseful: parseMarkdownSection(content, 'Why This Matters'),
+      whenToUse: parseMarkdownSection(content, 'When to Use This Pattern')
+        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
+    },
+    after: {
+      walkthrough: parseMarkdownSection(content, 'What Just Happened'),
+      keepInMind: parseMarkdownSection(content, 'Keep in Mind')
+        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
+      pitfalls: parseMarkdownSection(content, 'Common Pitfalls')
+        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
+      realWorld: parseMarkdownSection(content, 'Where to Incorporate This')
+        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
+      relatedPatterns: parseMarkdownSection(content, 'Related Patterns')
+        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
+    },
   }
-
-  const sections = raw.split(/^## /m).slice(1)
-
-  for (const section of sections) {
-    const newlineIdx = section.indexOf('\n')
-    const heading = section.slice(0, newlineIdx).trim()
-    const body = section.slice(newlineIdx + 1).trim()
-    const mapping = sectionMap[heading]
-    if (!mapping) continue
-
-    const [group, field] = mapping
-    const target = article[group] as Record<string, string[]>
-
-    if (bulletSections.has(field)) {
-      target[field] = body
-        .split('\n')
-        .filter(line => line.startsWith('- '))
-        .map(line => line.slice(2).trim())
-    } else {
-      target[field] = body
-        .split(/\n\n+/)
-        .map(p => p.replace(/\n/g, ' ').trim())
-        .filter(Boolean)
-    }
-  }
-
-  return article
 }
 
-const modules = import.meta.glob<string>('./articles/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-})
+const modules = import.meta.glob('./articles/*.md', { eager: true, query: '?raw', import: 'default' }) as Record<string, string>
 
 const sorted = Object.entries(modules)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([, raw]) => parseMarkdown(raw))
+  .map(([, content]) => parseMarkdown(content))
 
 export const streamingArticles: StreamingArticle[] = sorted

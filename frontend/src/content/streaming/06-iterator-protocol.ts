@@ -1,141 +1,129 @@
 import type { AnimationDefinition } from '../../engine/types'
 import { EMPTY_STATE } from '../../engine/types'
-import { streamingColumns, streamingStatuses } from './layout'
+import { mechanicsColumns, basicsStatuses } from './layouts'
 
-const sourceCode = `class CountDown:
-    """A manual iterator (no generator)."""
-    
-    def __init__(self, start):
-        self.current = start
-    
-    def __iter__(self):
-        return self
-    
-    def __next__(self):
-        if self.current <= 0:
-            raise StopIteration
-        self.current -= 1
-        return self.current + 1
+const sourceCode = `def nums():
+    yield 1
+    yield 2
 
 
-# Using the iterator
-countdown = CountDown(3)
-iterator = iter(countdown)
+gen = nums()
 
-print(next(iterator))  # 3
-print(next(iterator))  # 2
-print(next(iterator))  # 1
+# What for loop does internally:
+# 1. Get an iterator
+iterator = iter(gen)
 
+# 2. Call __next__() repeatedly
+print(iterator.__next__())  # Same as next(iterator)
+print(iterator.__next__())
+
+# 3. Catch StopIteration to know when done
 try:
-    print(next(iterator))
+    iterator.__next__()
 except StopIteration:
-    print("StopIteration raised!")`
+    print("No more items!")
+
+# That's all a for loop does!`
 
 const iteratorProtocol: AnimationDefinition = {
-  id: 'streaming-iterator-protocol',
-  title: 'Iterator Protocol',
-  columns: streamingColumns,
-  statuses: streamingStatuses,
+  id: 'streaming-06-iterator-protocol',
+  title: 'The Iterator Protocol',
+  columns: mechanicsColumns,
+  statuses: basicsStatuses,
   sourceCode,
   initialState: EMPTY_STATE,
 
   phases: [
     {
-      title: 'Define Iterator Class',
-      explanation: '• An iterator must implement `__iter__()` and `__next__()`\n• `__iter__()` returns the iterator itself (enables `for` loops)\n• `__next__()` returns the next value or raises `StopIteration`',
+      title: 'The Secret Behind for Loops',
+      explanation: '• `for x in something` uses the "iterator protocol"\n• Two special methods make it work:\n  - `__iter__()` — get an iterator\n  - `__next__()` — get next value',
       startStep: 0,
-      endStep: 0,
+      endStep: 1,
     },
     {
-      title: 'Create Iterator',
-      explanation: '• `CountDown(3)` creates an instance with `current = 3`\n• `iter(countdown)` calls `__iter__()` which returns `self`\n• The iterator is now ready to produce values',
-      startStep: 1,
-      endStep: 2,
+      title: 'Step 1: Get an Iterator',
+      explanation: '• `iter(gen)` calls `gen.__iter__()`\n• For generators, this returns itself\n• The iterator remembers where we are',
+      startStep: 2,
+      endStep: 3,
     },
     {
-      title: 'First next() Call',
-      explanation: '• `next(iterator)` calls `__next__()` on the iterator\n• `current` is 3, so we return 3 and decrement to 2\n• State is maintained inside the object',
-      startStep: 3,
-      endStep: 5,
+      title: 'Step 2: Call __next__() Repeatedly',
+      explanation: '• Each `__next__()` call gets one value\n• `next(x)` is just shorthand for `x.__next__()`\n• The iterator tracks position internally',
+      startStep: 4,
+      endStep: 7,
     },
     {
-      title: 'Second and Third Calls',
-      explanation: '• Each `next()` returns the current value and decrements\n• The iterator tracks its position internally\n• No external state management needed',
-      startStep: 6,
-      endStep: 9,
-    },
-    {
-      title: 'StopIteration',
-      explanation: '• When `current <= 0`, we raise `StopIteration`\n• This signals to the caller that the iterator is exhausted\n• `for` loops catch this automatically and exit cleanly',
-      startStep: 10,
-      endStep: 12,
+      title: 'Step 3: StopIteration Signals Done',
+      explanation: '• When no more values, `__next__()` raises StopIteration\n• `for` loops catch this automatically\n• That\'s how they know when to stop!',
+      startStep: 8,
+      endStep: 11,
     },
   ],
 
   steps: [
-    [{ action: 'highlightLine', lineId: 'line-0' }],
+    [
+      { action: 'highlightLine', lineId: 'line-0' },
+      { action: 'addCard', columnId: 'state', id: 'protocol', title: 'Iterator Protocol', statusId: 'waiting' },
+      { action: 'addCard', columnId: 'state', id: 'p1', title: '1️⃣ __iter__() → get iterator', statusId: 'created' },
+      { action: 'addCard', columnId: 'state', id: 'p2', title: '2️⃣ __next__() → get value', statusId: 'created' },
+      { action: 'addCard', columnId: 'state', id: 'p3', title: '3️⃣ StopIteration → done!', statusId: 'created' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-5' },
+      { action: 'addCard', columnId: 'output', id: 'gen', title: 'nums() → generator object', statusId: 'created' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-9' },
+      { action: 'setGlow', cardId: 'p1', glow: true },
+      { action: 'setStatus', cardId: 'p1', statusId: 'running' },
+    ],
+    [
+      { action: 'addCard', columnId: 'output', id: 'iter', title: 'iter(gen) → same object!', statusId: 'receiving' },
+      { action: 'addCard', columnId: 'output', id: 'note', title: '💡 Generators ARE iterators', statusId: 'waiting' },
+      { action: 'setGlow', cardId: 'p1', glow: false },
+      { action: 'setStatus', cardId: 'p1', statusId: 'done' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-12' },
+      { action: 'setGlow', cardId: 'p2', glow: true },
+      { action: 'setStatus', cardId: 'p2', statusId: 'running' },
+      { action: 'removeCard', cardId: 'note' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-1' },
+      { action: 'addOutput', id: 'o1', text: '1', time: '0.0s' },
+      { action: 'addCard', columnId: 'output', id: 'v1', title: '__next__() → 1', statusId: 'value' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-13' },
+      { action: 'removeCard', cardId: 'v1' },
+    ],
+    [
+      { action: 'highlightLine', lineId: 'line-2' },
+      { action: 'addOutput', id: 'o2', text: '2', time: '0.0s' },
+      { action: 'addCard', columnId: 'output', id: 'v2', title: '__next__() → 2', statusId: 'value' },
+      { action: 'setGlow', cardId: 'p2', glow: false },
+      { action: 'setStatus', cardId: 'p2', statusId: 'done' },
+    ],
     [
       { action: 'highlightLine', lineId: 'line-17' },
-      { action: 'addCard', columnId: 'generator', id: 'cd', title: 'CountDown(3)', statusId: 'ready' },
-      { action: 'addCard', columnId: 'memory', id: 'state', title: 'current = 3', statusId: 'buffered' },
+      { action: 'removeCard', cardId: 'v2' },
+      { action: 'setGlow', cardId: 'p3', glow: true },
+      { action: 'setStatus', cardId: 'p3', statusId: 'running' },
+    ],
+    [
+      { action: 'addCard', columnId: 'output', id: 'stop', title: '🛑 StopIteration raised!', statusId: 'done' },
     ],
     [
       { action: 'highlightLine', lineId: 'line-18' },
-      { action: 'addOutput', id: 'o1', text: 'iter() calls __iter__() -> self', time: '0.0s' },
     ],
     [
-      { action: 'highlightLine', lineId: 'line-20' },
-      { action: 'setStatus', cardId: 'cd', statusId: 'running' },
-      { action: 'setGlow', cardId: 'cd', glow: true },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-9' },
-      { action: 'addOutput', id: 'o2', text: '__next__(): current=3, return 3', time: '0.0s' },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-20' },
-      { action: 'setStatus', cardId: 'cd', statusId: 'suspended' },
-      { action: 'setGlow', cardId: 'cd', glow: false },
-      { action: 'addOutput', id: 'o3', text: '3', time: '0.0s' },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-21' },
-      { action: 'setStatus', cardId: 'cd', statusId: 'running' },
-      { action: 'setGlow', cardId: 'cd', glow: true },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-9' },
-      { action: 'setStatus', cardId: 'state', statusId: 'buffered' },
-      { action: 'addOutput', id: 'o4', text: '__next__(): current=2, return 2', time: '0.0s' },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-21' },
-      { action: 'setStatus', cardId: 'cd', statusId: 'suspended' },
-      { action: 'setGlow', cardId: 'cd', glow: false },
-      { action: 'addOutput', id: 'o5', text: '2', time: '0.0s' },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-22' },
-      { action: 'setStatus', cardId: 'cd', statusId: 'running' },
-      { action: 'setGlow', cardId: 'cd', glow: true },
-      { action: 'addOutput', id: 'o6', text: '1', time: '0.0s' },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-25' },
-      { action: 'setStatus', cardId: 'cd', statusId: 'running' },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-10' },
-      { action: 'addOutput', id: 'o7', text: '__next__(): current=0, raise StopIteration', time: '0.0s' },
-      { action: 'setStatus', cardId: 'cd', statusId: 'exhausted' },
-      { action: 'setGlow', cardId: 'cd', glow: false },
-    ],
-    [
-      { action: 'highlightLine', lineId: 'line-27' },
-      { action: 'addOutput', id: 'o8', text: 'StopIteration raised!', time: '0.0s' },
+      { action: 'highlightLine', lineId: 'line-19' },
+      { action: 'addOutput', id: 'o3', text: 'No more items!', time: '0.0s' },
+      { action: 'setGlow', cardId: 'p3', glow: false },
+      { action: 'setStatus', cardId: 'p3', statusId: 'done' },
+      { action: 'addCard', columnId: 'output', id: 'summary', title: '✨ for loop does exactly this!', statusId: 'receiving' },
       { action: 'clearHighlights' },
-      { action: 'removeCard', cardId: 'cd' },
-      { action: 'removeCard', cardId: 'state' },
     ],
   ],
 }

@@ -1,63 +1,49 @@
-## Introduction
+# Introduction
 
-File streaming processes files line by line without loading them entirely into memory. A generator that yields lines maintains constant memory regardless of file size. This pattern handles log files, CSV data, and any line-based format efficiently.
+Files are the classic use case for generators. Instead of `file.readlines()` which loads the entire file into memory, iterate line by line:
 
-This animation shows a file-processing pipeline: read lines, filter for errors, extract messages. The generator chain processes a 10GB log file using only enough memory for one line at a time. Early termination with `break` avoids reading the entire file.
+```python
+with open(filename) as f:
+    for line in f:  # Lazy iteration!
+        yield process(line)
+```
 
-## Why This Matters
+# Why This Matters
 
-Files are often larger than available memory. A 10GB log file cannot be loaded into RAM on most machines, but you can process it line by line. Generator-based streaming makes this natural and efficient.
+A 10GB log file would need 10GB+ of RAM to load entirely. With generators, you need memory for just one line at a time — maybe a few kilobytes. This is the difference between "impossible" and "runs on any machine."
 
-The pipeline pattern applies directly to file processing. Read, filter, transform, write — each stage is a generator. Data flows through without intermediate storage. You process terabytes with gigabytes of RAM.
+# What Just Happened
 
-Early termination is a superpower. If you are searching for a specific log entry, you stop when you find it. The remaining gigabytes are never read. This can turn a minutes-long search into a sub-second one.
+The animation showed:
 
-## When to Use This Pattern
+1. Building a pipeline: `read_lines()` → `filter_errors()`
+2. Processing a large log file line by line
+3. Finding 3 errors, then using `break` to stop early
+4. The remaining 99.9% of the file was **never even read**
 
-- Processing log files too large to fit in memory
-- Streaming CSV or JSON-lines data
-- ETL from large source files
-- Real-time log tailing and analysis
-- Any file processing where you might not need all data
-- Pipeline processing with file I/O stages
+Memory usage stayed constant at roughly "one line" throughout.
 
-## What Just Happened
+# Keep in Mind
 
-`process_logs()` created a chain of generators. No file I/O happened yet — the file was not even opened. The generators were set up but dormant.
+- `open(file)` itself is iterable — no need to wrap it
+- `with` ensures the file closes even if you break early
+- Generators compose naturally with file iteration
 
-The `for` loop started pulling values. This triggered the cascade: read a line, check for "ERROR", extract the message. Lines without "ERROR" were read and discarded; only matching lines reached the output.
+# Common Pitfalls
 
-After three errors, we broke out of the loop. The file was not fully read — we stopped early. The remaining gigabytes (in the simulated example) were never processed.
+- **Using readlines() on large files** — Memory explosion!
+- **Not using `with` for file handling** — Resource leaks
 
-## Keep in Mind
+# Where to Incorporate This
 
-- `for line in file` already iterates line by line (file objects are iterators)
-- Wrap in a generator to add cleanup with `with open()` or error handling
-- Each line is a string including the newline; strip as needed
-- Generators chain naturally for multi-stage file processing
-- Early termination with `break` stops reading the file
-- The file stays open while iterating; use `with` to ensure closure
+Essential for:
 
-## Common Pitfalls
+- Log file analysis
+- CSV/JSON streaming processing
+- Any file too large to fit in memory
+- Processing files of unknown size
 
-- Calling `file.read()` or `file.readlines()` which loads everything into memory
-- Forgetting to close files (use `with` or ensure generator cleanup)
-- Not handling encoding errors for non-UTF-8 files
-- Building intermediate lists between processing stages
-- Processing the entire file when early termination is possible
+# Related Patterns
 
-## Where to Incorporate This
-
-- Log analysis tools searching for specific patterns
-- Data ingestion pipelines from large files
-- File format conversion (CSV to JSON, etc.)
-- Real-time monitoring of growing log files
-- ETL jobs reading from file-based sources
-- Any batch processing of file-based data
-
-## Related Patterns
-
-- Memory efficiency (animation 5) explains the memory benefits
-- Chaining generators (animation 12) shows pipeline composition
-- Error handling (animation 18) shows handling file read errors
-- `itertools` (animation 15) provides useful file-processing utilities
+- **Memory Efficiency** (Animation 7) — Why O(1) memory matters
+- **Early Exit** (Animation 4) — Stopping when you have enough
