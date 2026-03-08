@@ -4,7 +4,7 @@ export function Home() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-4xl font-bold tracking-tight text-text">
-        under<span className="text-brand">the</span>code
+        <span className="text-brand">_</span>underthecode
       </h1>
       <p className="mt-3 text-lg text-muted">
         Hard concepts made simple through text and animations.

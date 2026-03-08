@@ -1,5 +1,6 @@
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { AnimationViewer } from '../engine/AnimationViewer'
+import { VoteButtons } from '../components/VoteButtons'
 import { animations } from '../content/asyncio'
 import { articles } from '../content/asyncio/articles'
 import { Prose } from '../components/InlineCode'
@@ -61,9 +62,12 @@ export function AnimationPage() {
         </span>
       </div>
 
-      <h1 className="text-3xl font-bold tracking-tight text-text">
-        {animation.title}
-      </h1>
+      <div className="flex flex-wrap items-center gap-4">
+        <h1 className="text-3xl font-bold tracking-tight text-text">
+          {animation.title}
+        </h1>
+        <VoteButtons animationId={`python-asyncio/${index + 1}`} />
+      </div>
       <p className="mt-2 text-sm text-muted">
         Animation {index + 1} of {TOTAL}
       </p>
@@ -71,6 +75,14 @@ export function AnimationPage() {
       <hr className="my-8 border-border" />
 
       {/* ── BEFORE THE ANIMATION ── */}
+
+      {/* The Concept */}
+      {article.before.concept.length > 0 && (
+        <section className="mb-10 space-y-4">
+          <SectionHeading color="text-muted">The Concept</SectionHeading>
+          <Paragraphs items={article.before.concept} />
+        </section>
+      )}
 
       {/* Introduction */}
       <section className="mb-10 space-y-4">
@@ -82,12 +94,6 @@ export function AnimationPage() {
       <section className="mb-10 space-y-4">
         <SectionHeading color="text-violet">Why This Matters</SectionHeading>
         <Paragraphs items={article.before.whyUseful} />
-      </section>
-
-      {/* When to Use This Pattern */}
-      <section className="mb-10 space-y-4">
-        <SectionHeading color="text-brand">When to Use This Pattern</SectionHeading>
-        <BulletList items={article.before.whenToUse} />
       </section>
 
       {/* Stepper hint */}
@@ -111,43 +117,27 @@ export function AnimationPage() {
         <Paragraphs items={article.after.walkthrough} />
       </section>
 
-      {/* Keep in Mind */}
-      {article.after.keepInMind.length > 0 && (
+      {/* When to Use */}
+      {article.after.whenToUse.length > 0 && (
         <section className="mt-10">
-          <div className="rounded-lg border border-amber/50 bg-amber/10 p-6">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-amber">
-              Keep in Mind
+          <div className="rounded-lg border border-green/50 bg-green/10 p-6">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-green">
+              When to Use
             </h3>
-            <BulletList items={article.after.keepInMind} className="text-sm text-amber" />
+            <BulletList items={article.after.whenToUse} className="text-sm text-green" />
           </div>
         </section>
       )}
 
-      {/* Common Pitfalls */}
-      {article.after.pitfalls.length > 0 && (
+      {/* When to Avoid */}
+      {article.after.whenToAvoid.length > 0 && (
         <section className="mt-10">
           <div className="rounded-lg border border-red/50 bg-red/10 p-6">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-red">
-              Common Pitfalls
+              When to Avoid
             </h3>
-            <BulletList items={article.after.pitfalls} className="text-sm text-red" />
+            <BulletList items={article.after.whenToAvoid} className="text-sm text-red" />
           </div>
-        </section>
-      )}
-
-      {/* Where to Incorporate This */}
-      {article.after.realWorld.length > 0 && (
-        <section className="mt-10 space-y-4">
-          <SectionHeading color="text-green">Where to Incorporate This</SectionHeading>
-          <BulletList items={article.after.realWorld} />
-        </section>
-      )}
-
-      {/* Related Patterns */}
-      {article.after.relatedPatterns.length > 0 && (
-        <section className="mt-10 space-y-4">
-          <SectionHeading color="text-violet">Related Patterns &amp; Further Reading</SectionHeading>
-          <BulletList items={article.after.relatedPatterns} />
         </section>
       )}
 

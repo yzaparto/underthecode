@@ -1,68 +1,45 @@
 ## Introduction
 
-LLM providers cap concurrent requests — exceed the limit and you get 429 errors. `asyncio.Semaphore(N)` is a counter that allows at most N tasks to enter a critical section simultaneously. In this animation, `Semaphore(2)` limits 4 LLM calls to 2 at a time. They run in two batches of 2.
-
-The semaphore pattern is the simplest and most effective way to enforce concurrency limits in async Python. You wrap the rate-limited operation in `async with sem:` and the semaphore handles the rest — blocking excess tasks until a slot opens up. No manual counting, no complex scheduling logic.
-
-This is different from a queue. A queue buffers work items and processes them in order. A semaphore lets tasks run freely up to a limit, then makes the rest wait. Tasks are not ordered — whichever task acquires the semaphore first gets to run. The semaphore is purely a concurrency gate.
+LLM providers cap concurrent requests — exceed the limit and you get **429 errors**. `asyncio.Semaphore(N)` is a counter that allows at most N tasks to enter a critical section simultaneously. The animation shows `Semaphore(2)` limiting 4 LLM calls to 2 at a time — they run in two batches of 2. Each task wraps its API call in `async with sem:` and the semaphore handles blocking, ordering, and release automatically.
 
 ## Why This Matters
 
-Without rate limiting, `gather()` on 100 LLM calls hammers the API instantly. Semaphores let you run at maximum safe throughput. You trade some speed (batching) for API compliance. In production, this is the difference between reliable calls and constant 429 "Too Many Requests" errors.
+Without rate limiting, `gather()` on 100 LLM calls hammers the API instantly. You get 429s, retry storms, exponential backoff cascades, and degraded throughput that is actually **worse** than sequential execution. A semaphore lets you run at maximum safe throughput — N concurrent requests, always, automatically.
 
-Every major LLM provider enforces concurrency limits. OpenAI, Anthropic, Google, and others all have per-account or per-key limits on simultaneous requests. Exceeding these limits means dropped requests, retry storms, and degraded user experience. A semaphore makes compliance automatic and invisible.
+Every major LLM provider enforces concurrency limits. OpenAI's tier-1 accounts allow roughly 25 concurrent requests. Anthropic's rate limits vary by model and plan. Google's Vertex AI has per-project quotas. Exceeding these means dropped requests and wasted latency on retries. A semaphore makes compliance invisible to callers — wrap the API call in `async with sem:` and the limit is enforced without changing the function's interface.
 
-The beauty of the semaphore is composability. You can wrap any async function with `async with sem:` without changing its interface or behavior. Callers do not need to know about the rate limit. This makes it easy to add concurrency control to existing code without refactoring.
-
-## When to Use This Pattern
-
-- LLM API rate limiting for OpenAI, Anthropic, and other providers with concurrency caps
-- Database connection pooling where the pool has a fixed maximum number of connections
-- File descriptor limits when opening many files or sockets concurrently
-- Concurrent download caps to avoid overwhelming a server or your own bandwidth
-- Web scraping with politeness limits to respect target server capacity
-- GPU memory management across concurrent model inference calls
+The composability is what makes semaphores powerful in practice. You can add concurrency control to any async function without refactoring its callers. Multiple independent subsystems can each have their own semaphore with different limits. A database pool might use `Semaphore(10)` while the LLM client uses `Semaphore(5)`. Each enforces its own constraint independently. This is fundamentally different from a queue — a semaphore does not buffer or order work, it simply gates concurrent access.
 
 ## What Just Happened
 
-GPT-4 and Claude acquired the semaphore first, filling both of the 2 available slots. Gemini and Llama attempted to acquire but the semaphore was full, so they suspended and waited. When GPT-4 and Claude finished and released their slots, Gemini and Llama acquired and ran.
+GPT-4 and Claude acquired the semaphore first, filling both available slots. Gemini and Llama attempted to acquire but the semaphore was full, so they suspended. When GPT-4 and Claude finished and exited the `async with` block, their slots were released. Gemini and Llama acquired immediately and ran. Total time was 4 seconds — two batches of 2 seconds each. Without the semaphore, all 4 would have started simultaneously, likely triggering rate limit errors. The context manager guaranteed release even if a task raised an exception.
 
-Total execution time was 4 seconds instead of 2 — two batches of 2 seconds each. Without the semaphore, all 4 would have started simultaneously and likely triggered rate limit errors. We traded speed for reliability, which is almost always the right trade in production.
+## When to Use
 
-The semaphore managed all of this automatically. Each task used `async with sem:` and the semaphore handled acquisition, blocking, and release. Even if a task raised an exception, the context manager guarantees the slot is released.
+- LLM API rate limiting for OpenAI, Anthropic, and Google with per-key concurrency caps
+- Database connection pooling where `asyncpg` pool size is the semaphore value
+- Concurrent S3 uploads via `boto3` with a cap on simultaneous `PutObject` calls
+- gRPC client-side concurrency limiting to avoid overwhelming a single backend service
+- Web scraping with politeness limits to respect `robots.txt` crawl-delay directives
+- GPU memory management across concurrent model inference requests
+- File descriptor limits when opening many sockets or files simultaneously
 
-## Keep in Mind
+## When to Avoid
 
-- `async with sem:` guarantees release even on exception, preventing slot leaks
-- `Semaphore(N)` allows N concurrent holders — N tasks can be inside the critical section at once
-- `BoundedSemaphore(N)` adds a check that you do not release more times than you acquire
-- Semaphore controls concurrency (simultaneous tasks) not rate (requests per minute)
-- The semaphore is fair — waiters are served in FIFO order, preventing starvation
-- You can use `await sem.acquire()` and `sem.release()` manually, but the context manager is safer
+- When you need requests-per-minute limiting — semaphores control concurrency, not rate; use a token bucket
+- When work must be processed in order — semaphores are unordered; use a `Queue` instead
+- When you need to buffer work items — semaphores do not store tasks, they only gate access
+- When different operations need different limits — one semaphore per limit, not one global semaphore
+- CPU-bound work where the GIL is the bottleneck — semaphores only help with I/O-bound concurrency
+- When the downstream service has no concurrency limit — you are throttling yourself for no reason
+- When you need distributed rate limiting across multiple processes — use Redis-based token buckets
 
-## Common Pitfalls
+## In Production
 
-- Setting the semaphore value too low, underutilizing your API quota and slowing throughput
-- Setting it too high, hitting rate limits anyway and triggering retry storms
-- Not using the context manager, risking forgotten release on exception paths
-- Confusing concurrency limit with rate limit — use a token bucket for requests-per-minute
-- Using a single global semaphore when different endpoints have different concurrency limits
-- Creating a new semaphore per request instead of sharing one across all requests
+**OpenAI's Python SDK** documents that tier-1 accounts have approximately 25 requests-per-minute and concurrency limits that vary by model. Production wrappers like `litellm` and `langchain`'s `ChatOpenAI` use internal semaphores to enforce these limits. When you configure `max_concurrency` in LangChain's `RunnableConfig`, it creates an `asyncio.Semaphore` that gates all calls through that chain. This prevents thundering-herd problems when a batch of user requests triggers simultaneous LLM calls.
 
-## Where to Incorporate This
+**asyncpg**, the high-performance PostgreSQL client for asyncio, implements its connection pool as a semaphore-guarded resource. The pool has a fixed `max_size` (default 10). When all connections are in use, `pool.acquire()` suspends the caller until one is returned. Internally this is an `asyncio.Semaphore` — the pool size is the semaphore value. FastAPI applications using `asyncpg` rely on this to prevent connection exhaustion under load without any explicit semaphore in application code.
 
-- OpenAI and Anthropic API concurrency caps to stay within provider limits
-- Database connection pools where the pool size is the semaphore value
-- Concurrent file uploads to S3 or GCS with a cap on simultaneous transfers
-- Parallel web scraping with politeness limits to respect server capacity
-- Limiting GPU memory usage across concurrent model inference calls
-- Controlling concurrent WebSocket connections to rate-limited services
-- Batch processing with a cap on simultaneous worker tasks
+**Kubernetes** uses admission controllers that function as distributed semaphores. The `LimitRange` and `ResourceQuota` objects cap concurrent pod creation and resource consumption per namespace. When a deployment scales up, the API server gates pod scheduling through these limits. The pattern is identical to `asyncio.Semaphore` — N slots, FIFO waiters, automatic release on completion.
 
-## Related Patterns
-
-- Queues for ordered producer-consumer processing with buffering (animation 11)
-- Retry with backoff when rate limits are hit despite the semaphore (animation 18)
-- Token bucket algorithm for true rate limiting measured in requests per minute
-- `BoundedSemaphore` for safety against accidental over-release bugs
-- Circuit breaker pattern for failing fast when a service is consistently overloaded
+**boto3's** `TransferConfig` for S3 uploads uses `max_concurrency` (default 10) to limit simultaneous multipart upload parts. Each part upload acquires a slot from an internal semaphore before starting the HTTP request. This prevents overwhelming S3's per-prefix throughput limits and avoids 503 SlowDown responses on high-throughput buckets.

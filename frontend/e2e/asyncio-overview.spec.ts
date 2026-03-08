@@ -87,7 +87,7 @@ test.describe('Asyncio Overview Page', () => {
   })
 
   test('back to home link via header', async ({ page }) => {
-    const headerLogo = page.locator('header a', { hasText: 'underthecode' })
+    const headerLogo = page.locator('header a', { hasText: '_underthecode' })
     await headerLogo.click()
     
     await expect(page).toHaveURL('/')

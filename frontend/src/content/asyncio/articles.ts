@@ -1,37 +1,37 @@
 export interface AnimationArticle {
   before: {
+    concept: string[]
     intro: string[]
     whyUseful: string[]
-    whenToUse: string[]
   }
   after: {
     walkthrough: string[]
-    keepInMind: string[]
-    pitfalls: string[]
-    realWorld: string[]
     relatedPatterns: string[]
+    whenToUse: string[]
+    whenToAvoid: string[]
+    inProduction: string[]
   }
 }
 
 const sectionMap: Record<string, [keyof AnimationArticle, string]> = {
+  'The Concept':               ['before', 'concept'],
   'Introduction':              ['before', 'intro'],
   'Why This Matters':          ['before', 'whyUseful'],
-  'When to Use This Pattern':  ['before', 'whenToUse'],
   'What Just Happened':        ['after', 'walkthrough'],
-  'Keep in Mind':              ['after', 'keepInMind'],
-  'Common Pitfalls':           ['after', 'pitfalls'],
-  'Where to Incorporate This': ['after', 'realWorld'],
   'Related Patterns':          ['after', 'relatedPatterns'],
+  'When to Use':               ['after', 'whenToUse'],
+  'When to Avoid':             ['after', 'whenToAvoid'],
+  'In Production':             ['after', 'inProduction'],
 }
 
 const bulletSections = new Set([
-  'whenToUse', 'keepInMind', 'pitfalls', 'realWorld', 'relatedPatterns',
+  'relatedPatterns', 'whenToUse', 'whenToAvoid',
 ])
 
 function parseMarkdown(raw: string): AnimationArticle {
   const article: AnimationArticle = {
-    before: { intro: [], whyUseful: [], whenToUse: [] },
-    after: { walkthrough: [], keepInMind: [], pitfalls: [], realWorld: [], relatedPatterns: [] },
+    before: { concept: [], intro: [], whyUseful: [] },
+    after: { walkthrough: [], relatedPatterns: [], whenToUse: [], whenToAvoid: [], inProduction: [] },
   }
 
   const sections = raw.split(/^## /m).slice(1)

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 
 export type ThemeMode = 'dark' | 'light'
 
-const STORAGE_KEY = 'underthecode-theme'
+const STORAGE_KEY = '_underthecode-theme'
 
 function getSystemTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'dark'

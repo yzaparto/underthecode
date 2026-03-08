@@ -1,67 +1,50 @@
 ## Introduction
 
-LLM APIs are unpredictable — what takes 1 second today might take 30 seconds tomorrow when the provider is under load. Without timeouts, your application is at the mercy of external services. A single hung call can freeze an entire request pipeline and leave users staring at a spinner.
+LLM APIs are unpredictable — what takes 1 second today might take 30 seconds tomorrow when the provider is under load. `async with asyncio.timeout(1.0)` (Python 3.11+) sets a deadline for an entire block of code. Everything inside the `async with` must complete within the deadline or the block is cancelled and `TimeoutError` is raised. `asyncio.wait_for(coro, timeout=2.0)` wraps a single coroutine with the same behavior for older Python versions.
 
-`async with asyncio.timeout(1.0)` (Python 3.11+) sets a deadline for an entire block of code. Everything inside the `async with` must complete within the deadline or the block is cancelled and `TimeoutError` is raised. `asyncio.wait_for(coro, timeout=2.0)` wraps a single coroutine with the same behavior.
-
-Both mechanisms auto-cancel the underlying task and raise `TimeoutError` when the deadline expires. The difference is scope: `timeout()` can wrap multiple awaits in a block, while `wait_for()` targets a single coroutine. This animation demonstrates both approaches against the same slow LLM call.
+Both mechanisms auto-cancel the underlying task and raise `TimeoutError` when the deadline expires. The difference is scope: `timeout()` can wrap multiple awaits sharing one deadline, while `wait_for()` targets a single coroutine. This animation demonstrates both approaches against the same slow LLM call.
 
 ## Why This Matters
 
-Without timeouts, one hung API call cascades through your system. The user waits, gets frustrated, retries, and now you have two hung requests consuming resources. Multiply this across hundreds of concurrent users and a brief API slowdown becomes a full outage.
+Without timeouts, one hung API call cascades through your system. The user waits, retires, and now you have two hung requests consuming memory and connection pool slots. Multiply this across hundreds of concurrent users and a brief API slowdown becomes a full outage. Timeouts are the **circuit breaker** for async code — they transform "wait forever" into "wait this long, then recover."
 
-Timeouts are circuit breakers for async code. They transform "wait forever" into "wait this long, then recover." Every production system needs them on every external call — LLM APIs, databases, search engines, third-party services. The question is never whether to use timeouts, but how long to set them.
+Every external call in a production system needs a timeout: LLM APIs, databases, search engines, third-party services. The question is never whether to use timeouts, but **how long** to set them. Too tight and normal latency variance triggers false failures. Too loose and slow dependencies still cascade. The right value comes from measuring P99 latency of the dependency and adding a buffer.
 
-They prevent one slow dependency from taking down your entire application. A 30-second LLM call behind a 5-second timeout becomes a 5-second fallback response instead of a 30-second hang. Combined with retries and fallback strategies, timeouts make your system resilient to the inevitable unreliability of external services.
-
-## When to Use This Pattern
-
-- Any external API call including LLM providers, search engines, and databases
-- User-facing request handlers with response time SLAs that must be enforced
-- Background jobs with processing deadlines that should fail fast rather than run indefinitely
-- Health check endpoints that must respond quickly to avoid being marked as unhealthy by load balancers
-- CI/CD pipeline steps where hanging is worse than failing
-- Any operation where "too slow" is functionally equivalent to "failed"
+Timeouts compose with the rest of asyncio's control flow. Under the hood, `asyncio.timeout()` uses `task.cancel()` — the same cooperative cancellation mechanism from the previous animation. Nested timeouts follow **inner-wins semantics**: the tightest deadline always fires first. `asyncio.timeout_at()` accepts an absolute deadline for sharing a single budget across multiple sequential operations.
 
 ## What Just Happened
 
 Both timeouts fired before the 3-second LLM call completed. `asyncio.timeout()` raised `TimeoutError` after 1 second, cutting the operation short by 2 seconds. `wait_for()` raised `TimeoutError` after 2 seconds, giving the operation more time but still enforcing a ceiling.
 
-In both cases, the underlying task was automatically cancelled — no manual `task.cancel()` call was needed. The cancellation happened at the task's next `await` point, just like explicit cancellation. The `except TimeoutError` blocks ran immediately, providing fallback responses to the caller.
+In both cases, the underlying task was automatically cancelled — no manual `task.cancel()` call was needed. The cancellation happened at the task's next `await` point, exactly like explicit cancellation. The `except TimeoutError` blocks ran immediately, returning fallback responses to the caller.
 
-The total execution time was determined by the timeouts, not by the LLM call duration. This is the fundamental value proposition: you control how long your code waits, regardless of how long the external service takes. The 3-second call was converted into a 1-second or 2-second operation with graceful degradation.
+The total execution time was determined by the **timeouts**, not by the LLM call duration. A 3-second call became a 1-second or 2-second operation with graceful degradation. This is the fundamental value: you control how long your code waits, regardless of how long the external service takes.
 
-## Keep in Mind
+## When to Use
 
-- `asyncio.timeout()` is Python 3.11+ and scopes an entire `async with` block — multiple awaits share one deadline
-- `wait_for()` wraps a single coroutine and works on older Python versions (3.4+)
-- Both auto-cancel the underlying task when the deadline expires — no manual cancellation needed
-- `TimeoutError` is the built-in Python exception, not an asyncio-specific type
-- `asyncio.timeout_at()` accepts an absolute deadline (from `asyncio.get_event_loop().time()`) instead of a relative duration
-- Nested timeouts follow inner-wins semantics — the tightest deadline always fires first
+- Any external API call — LLM providers, search engines, databases, third-party services — where "too slow" equals "failed"
+- User-facing request handlers with response time SLAs that must be enforced regardless of backend latency
+- Health check endpoints that must respond within milliseconds to avoid being marked unhealthy by load balancers
+- Background jobs with processing deadlines that should fail fast rather than consume resources indefinitely
+- CI/CD pipeline steps where a hanging test or build is worse than a fast failure
+- Multi-step workflows where a total time budget must be split across sequential external calls using `timeout_at()`
 
-## Common Pitfalls
+## When to Avoid
 
-- Not having a fallback strategy — timeout plus crash is worse UX than timeout plus a cached or default response
-- Setting timeouts too tight so that normal latency variance triggers them and creates unnecessary failures
-- Nesting timeouts without understanding which fires first — the inner (tighter) deadline always wins
-- Using `wait_for()` and expecting to retry the same coroutine object — coroutines are single-use and consumed after the first await
-- Not logging timeout events for monitoring — timeouts are signals that a dependency is degrading and may need attention
-- Setting the same timeout on retries without adding backoff — rapid retries against a slow service make the problem worse
+- Setting timeouts without a fallback strategy — timeout plus crash is worse UX than timeout plus a cached or default response
+- Choosing timeout values without measuring actual P99 latency of the dependency, leading to false positives or useless ceilings
+- Nesting `timeout()` contexts without understanding inner-wins semantics — the tightest deadline always fires first regardless of nesting order
+- Using `wait_for()` and expecting to retry the same coroutine object afterward — coroutines are single-use and consumed after the first await
+- Setting identical timeout values on retries without backoff — rapid retries against a degraded service amplify the problem
+- Wrapping CPU-bound synchronous code in `timeout()` — cancellation only fires at `await` points, so blocking code runs to completion regardless
+- Omitting timeout logging and metrics — timeouts are signals that a dependency is degrading and needs attention before it causes an outage
 
-## Where to Incorporate This
+## In Production
 
-- LLM API call deadlines enforced per-call and per-request to bound total response time
-- User-facing chatbot response limits where 5 seconds of thinking is acceptable but 30 is not
-- Background agent SLA enforcement to prevent runaway tasks from consuming resources indefinitely
-- Health probe timeouts for Kubernetes readiness and liveness checks that must respond in milliseconds
-- Database query time limits to prevent slow queries from holding connections and starving other requests
-- Upstream service call budgets that allocate a time budget across multiple sequential external calls
+**httpx** exposes a structured timeout configuration via `httpx.Timeout(connect=5.0, read=10.0, write=5.0, pool=2.0)` that maps each phase of an HTTP request to a separate deadline. Under the hood, each phase timeout is implemented using `asyncio.timeout()` scoped to that phase's awaitable. The `pool` timeout is particularly subtle — it limits how long a request will wait for an available connection from the pool, preventing backpressure from a slow upstream from starving unrelated request paths. Production configurations typically set `connect` aggressively (1-3s) since DNS and TCP handshake latency is predictable, while setting `read` more generously for LLM streaming responses that take variable time to complete.
 
-## Related Patterns
+**OpenAI's Python SDK** accepts a `timeout` parameter on every API call (`client.chat.completions.create(timeout=30.0)`) and a default `timeout` on the client constructor. Internally, this wraps the HTTP request in `asyncio.timeout()`. The SDK also supports `max_retries` with exponential backoff, but critically, each retry gets its own fresh timeout — the deadline is per-attempt, not cumulative. Teams running latency-sensitive applications set per-call timeouts based on model and expected token count: GPT-4 calls with long outputs get 60s, GPT-3.5-turbo classification calls get 10s.
 
-- Cancellation mechanics that timeouts use under the hood (animation 8)
-- Retry with exponential backoff after timeout for transient failures (animation 18)
-- Circuit breaker pattern that stops calling a service after N consecutive timeouts
-- `asyncio.timeout_at()` for absolute deadlines when you need to share a deadline across multiple operations
-- Combining timeout with `wait(FIRST_COMPLETED)` for "fastest result within a time budget"
+**Kubernetes** liveness and readiness probes use timeouts as the primary health signal. A liveness probe configured with `timeoutSeconds: 3` sends an HTTP GET to the pod's health endpoint and expects a response within 3 seconds. If the asyncio application's event loop is blocked — by a GIL-holding CPU computation, a missing timeout on a database call, or a deadlocked semaphore — the health endpoint cannot respond in time, and Kubernetes restarts the pod. This is why `asyncio.timeout()` on every external dependency is not just good practice but a **liveness requirement**: one missing timeout on one database call can cause Kubernetes to kill the entire pod.
+
+**Redis** clients like **redis-py** with async support use `asyncio.timeout()` around both individual commands and connection acquisition from the pool. The `socket_timeout` parameter controls per-command deadlines, while `socket_connect_timeout` limits connection establishment. In production Redis deployments behind Sentinel or Cluster, the failover detection relies on these timeouts — when the master becomes unreachable, the timeout fires, the client queries Sentinel for the new master, and reconnects. Without aggressive socket timeouts (typically 1-3s for cache operations), a network partition between the application and a failed Redis master would stall every coroutine waiting on cache reads until the TCP stack's own timeout (often 15+ minutes) expired.

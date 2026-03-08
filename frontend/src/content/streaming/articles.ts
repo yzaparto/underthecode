@@ -1,50 +1,65 @@
 export interface StreamingArticle {
   before: {
+    concept: string[]
     intro: string[]
     whyUseful: string[]
-    whenToUse: string[]
   }
   after: {
     walkthrough: string[]
-    keepInMind: string[]
-    pitfalls: string[]
-    realWorld: string[]
     relatedPatterns: string[]
+    whenToUse: string[]
+    whenToAvoid: string[]
+    inProduction: string[]
   }
 }
 
-function parseMarkdownSection(content: string, heading: string): string[] {
-  const regex = new RegExp(`# ${heading}\\n([\\s\\S]*?)(?=\\n# |$)`, 'i')
-  const match = content.match(regex)
-  if (!match) return []
-  
-  return match[1]
-    .trim()
-    .split('\n\n')
-    .map(p => p.trim())
-    .filter(p => p.length > 0)
+const sectionMap: Record<string, [keyof StreamingArticle, string]> = {
+  'The Concept':               ['before', 'concept'],
+  'Introduction':              ['before', 'intro'],
+  'Why This Matters':          ['before', 'whyUseful'],
+  'What Just Happened':        ['after', 'walkthrough'],
+  'Related Patterns':          ['after', 'relatedPatterns'],
+  'When to Use':               ['after', 'whenToUse'],
+  'When to Avoid':             ['after', 'whenToAvoid'],
+  'In Production':             ['after', 'inProduction'],
 }
+
+const bulletSections = new Set([
+  'relatedPatterns', 'whenToUse', 'whenToAvoid',
+])
 
 function parseMarkdown(content: string): StreamingArticle {
-  return {
-    before: {
-      intro: parseMarkdownSection(content, 'Introduction'),
-      whyUseful: parseMarkdownSection(content, 'Why This Matters'),
-      whenToUse: parseMarkdownSection(content, 'When to Use This Pattern')
-        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
-    },
-    after: {
-      walkthrough: parseMarkdownSection(content, 'What Just Happened'),
-      keepInMind: parseMarkdownSection(content, 'Keep in Mind')
-        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
-      pitfalls: parseMarkdownSection(content, 'Common Pitfalls')
-        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
-      realWorld: parseMarkdownSection(content, 'Where to Incorporate This')
-        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
-      relatedPatterns: parseMarkdownSection(content, 'Related Patterns')
-        .flatMap(p => p.startsWith('- ') ? p.split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [p]),
-    },
+  const article: StreamingArticle = {
+    before: { concept: [], intro: [], whyUseful: [] },
+    after: { walkthrough: [], relatedPatterns: [], whenToUse: [], whenToAvoid: [], inProduction: [] },
   }
+
+  const sections = content.split(/^#{1,2} /m).slice(1)
+
+  for (const section of sections) {
+    const newlineIdx = section.indexOf('\n')
+    const heading = section.slice(0, newlineIdx).trim()
+    const body = section.slice(newlineIdx + 1).trim()
+    const mapping = sectionMap[heading]
+    if (!mapping) continue
+
+    const [group, field] = mapping
+    const target = article[group] as Record<string, string[]>
+
+    if (bulletSections.has(field)) {
+      target[field] = body
+        .split('\n')
+        .filter(line => line.startsWith('- '))
+        .map(line => line.slice(2).trim())
+    } else {
+      target[field] = body
+        .split(/\n\n+/)
+        .map(p => p.replace(/\n/g, ' ').trim())
+        .filter(Boolean)
+    }
+  }
+
+  return article
 }
 
 const modules = import.meta.glob('./articles/*.md', { eager: true, query: '?raw', import: 'default' }) as Record<string, string>

@@ -10,6 +10,9 @@ __pycache__/
 venv/
 env/
 
+# Database
+backend/data/
+
 # Build outputs
 dist/
 *.egg-info/

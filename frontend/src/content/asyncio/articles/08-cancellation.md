@@ -1,64 +1,56 @@
+## The Concept
+
+Asyncio cancellation is **cooperative**, not preemptive. Calling `task.cancel()` does not kill the task — it requests cancellation by scheduling a `CancelledError` to be raised at the task's next `await` point. Synchronous code between `await` points still runs to completion. This means a task that never awaits can never be cancelled.
+
+`CancelledError` inherits from `BaseException` (since Python 3.9), not `Exception`. This inheritance chain matters: a bare `except Exception` will **not** catch cancellation, which is correct behavior — cancellation should propagate through normal error handlers. Code that catches `BaseException` or `CancelledError` directly must re-raise it after cleanup, or it silently suppresses shutdown and timeout logic that depends on cancellation propagating.
+
+`asyncio.shield()` is the counterpart: it wraps a coroutine so that outer cancellation does not reach the inner task. The outer `await` still raises `CancelledError`, but the shielded inner task keeps running independently. You must separately await the inner task to retrieve its result. Shield protects **critical operations** — database commits, audit log writes, billing finalization — from being killed when a parent scope is cancelled.
+
 ## Introduction
 
-Not every LLM call should run to completion. If Claude is taking 10 seconds when you expected 2, you might want to abort and fall back to a cached response. `task.cancel()` raises `CancelledError` at the task's next `await` point, giving you a clean way to stop work that is no longer needed.
-
-But what about critical operations like saving chat history or writing audit logs? If a parent task gets cancelled during a save, you do not want the save to be killed mid-write. `asyncio.shield()` protects inner tasks from outer cancellation — the inner coroutine keeps running even when the outer scope is cancelled.
-
-This animation demonstrates both sides. Part 1 cancels a slow LLM call after a timeout. Part 2 shields a critical save operation from cancellation. Together they show how to build resilient async systems that can abort wasteful work while protecting essential operations.
+This animation demonstrates both sides of cancellation. Part 1 cancels a slow LLM call after a timeout — `CancelledError` is raised at the task's next `await`, the except block catches it gracefully, and a fallback response is returned. Part 2 shields a critical save operation from outer cancellation — the outer await raises `CancelledError` as expected, but the shielded inner task completes independently with its result intact.
 
 ## Why This Matters
 
-Without cancellation, your app waits forever for hung APIs. A single slow dependency can cascade through your entire system — blocked coroutines pile up, memory grows, and eventually the application becomes unresponsive. Cancellation is the safety valve that prevents one bad call from taking down everything.
+Without cancellation, your application waits forever for hung APIs. A single slow dependency cascades through the system — blocked coroutines accumulate, memory grows, connection pools exhaust, and eventually the application becomes unresponsive. Cancellation is the safety valve that converts "wait forever" into "wait this long, then recover."
 
-Without shield, critical saves get killed during shutdown. Imagine cancelling a request handler that is mid-way through persisting a transaction to the database. Without protection, you get corrupted state — half-written records, lost audit trails, inconsistent caches.
+Without shield, critical writes get killed during shutdown. Imagine a request handler cancelled mid-way through persisting a financial transaction. Without protection, you get half-written records, lost audit trails, and inconsistent state that is expensive to detect and painful to repair.
 
-Both mechanisms are essential for production resilience. Cancellation is how timeouts, graceful shutdown, and race patterns work under the hood. Shield is how you protect invariants during those same operations. Understanding both is non-negotiable for production async code.
-
-## When to Use This Pattern
-
-- Aborting slow LLM calls that exceed acceptable latency thresholds
-- Implementing manual timeouts with more control than `asyncio.timeout()` provides
-- Protecting database writes during application shutdown or request cancellation
-- Guarding critical file saves and audit log writes from being interrupted
-- Cancelling speculative work when the answer has been found by another task
-- Cleaning up resources like temporary files or open connections when a request is aborted
+Both mechanisms are foundational to production async code. Timeouts use cancellation under the hood. Graceful shutdown sequences depend on `CancelledError` propagating correctly. `TaskGroup` cancels siblings through this exact mechanism. Race patterns with `wait(FIRST_COMPLETED)` cancel losers via `task.cancel()`. Understanding cooperative cancellation is not optional — it is the control plane of asyncio.
 
 ## What Just Happened
 
-Part 1 demonstrated cancellation. Claude's task was cancelled after 1 second of a 3-second operation. `CancelledError` was raised at Claude's `await asyncio.sleep(3)` — the next await point after `cancel()` was called. The except block caught it gracefully and printed a fallback message instead of crashing.
+Part 1 demonstrated cancellation. The slow task was cancelled after 1 second of a 3-second operation. `CancelledError` was raised at the task's `await asyncio.sleep(3)` — the next await point after `cancel()` was called. The except block caught it, printed a fallback message, and execution continued cleanly without crashing.
 
-Part 2 demonstrated shielding. A `shield()` wrapper was created around a save operation, then the wrapper was cancelled. The outer `await protected` raised `CancelledError` as expected, but the underlying save task kept running independently. When we later awaited the save task directly, it completed successfully with its result intact.
+Part 2 demonstrated shielding. A `shield()` wrapper was created around a save operation, then the wrapper was cancelled. The outer `await protected` raised `CancelledError` as expected, but the underlying save task continued running in the background because `shield()` intercepted the cancellation. When the inner task was awaited directly afterward, it completed successfully with its result intact.
 
-The critical insight is that `shield()` does not prevent the outer await from raising `CancelledError` — it only prevents the inner task from being cancelled. You must separately await the inner task to get its result after the shield is cancelled.
+The critical insight: `shield()` does **not** make the outer await succeed. It only prevents the inner task from receiving the cancellation. You must hold a separate reference to the inner task and await it independently to get the result.
 
-## Keep in Mind
+## When to Use
 
-- `cancel()` raises `CancelledError` at the next `await` point, not instantly — code between `cancel()` and the next `await` still executes
-- `shield()` protects the inner task but the outer `await` still raises `CancelledError` — you do not get the result through the shield
-- You must still `await` the shielded inner task separately to get its result after the outer cancellation
-- Cancellation is a REQUEST not a guarantee — tasks can catch and suppress `CancelledError` in their except blocks
-- Always re-raise `CancelledError` after cleanup unless you have a specific reason not to — suppressing it silently prevents proper shutdown
+- Aborting slow LLM API calls that exceed acceptable latency thresholds before falling back to cached responses
+- Implementing manual timeouts with finer control than `asyncio.timeout()` provides, such as conditional cancellation
+- Protecting database commits and transaction finalization during request cancellation or application shutdown
+- Guarding audit log writes and billing record persistence from being interrupted by parent scope cancellation
+- Cancelling speculative work in race patterns when the winning result has been determined by another task
+- Cleaning up temporary files, closing connections, and releasing locks when a long-running operation is aborted
 
-## Common Pitfalls
+## When to Avoid
 
-- Not catching `CancelledError` in the cancelled task, allowing it to propagate and cancel parent tasks unexpectedly
-- Confusing `shield()` as making the outer await succeed — it does not, the outer await still raises `CancelledError`
-- Cancelling a shield but never awaiting the inner task afterward, causing a resource leak and unobserved exception warning
-- Suppressing `CancelledError` without re-raising it, which makes the task appear to complete normally and breaks shutdown logic
-- Assuming `cancel()` stops the task immediately — synchronous code between await points still runs to completion
-- Using `shield()` on fire-and-forget tasks without storing a reference to the inner task for later cleanup
+- Suppressing `CancelledError` without re-raising — this silently breaks shutdown sequences, timeout logic, and `TaskGroup` cancellation
+- Using `shield()` as a general-purpose "ignore cancellation" wrapper — it creates tasks that outlive their parent scope, violating structured concurrency
+- Catching `CancelledError` in library code that does not need cleanup — let it propagate to callers who understand the cancellation context
+- Shielding fire-and-forget tasks without storing a reference to the inner task, causing resource leaks and unobserved exception warnings
+- Assuming `cancel()` stops the task immediately — CPU-bound code between await points runs to completion regardless
+- Over-shielding everything out of caution — if every task is shielded, graceful shutdown cannot cancel anything and the process hangs
+- Using cancellation for flow control instead of exceptions — `CancelledError` is for aborting, not for signaling normal completion
 
-## Where to Incorporate This
+## In Production
 
-- Timeout fallbacks in chatbots where a slow response should be replaced with a cached or default answer
-- Protecting chat history saves during graceful shutdown so conversation state is never lost
-- Cancelling unused model responses in ensemble voting when the majority result is already determined
-- Graceful request abortion on user disconnect to free server resources immediately
-- Cleanup operations in long-running background workers that must finish database transactions before stopping
+**httpx** implements request cancellation through asyncio's cooperative model. When you cancel an `httpx.AsyncClient.get()` call, the `CancelledError` propagates through httpx's connection pool layer, which closes the underlying TCP socket and returns the connection slot to the pool. If cancellation hits during TLS negotiation or header parsing, httpx's internal `try/finally` blocks ensure partial connection state is cleaned up. This is why httpx connections do not leak on timeout — the cancellation path is as carefully coded as the success path.
 
-## Related Patterns
+**Uvicorn** uses `CancelledError` propagation for graceful shutdown. When Uvicorn receives SIGTERM, it cancels the server's `serve()` task, which propagates cancellation to all active request handler tasks. Each handler's `CancelledError` triggers Starlette's middleware cleanup chain — closing response streams, releasing database connections, flushing buffered logs. Handlers that shield critical work (like session persistence) continue running during the shutdown grace period. If shielded tasks do not complete within `--timeout-graceful-shutdown`, Uvicorn force-kills the remaining tasks and exits.
 
-- `asyncio.timeout()` for declarative deadlines that use cancellation under the hood (animation 9)
-- Graceful shutdown pattern using `try/except CancelledError` for resource cleanup (animation 17)
-- `TaskGroup` auto-cancellation that cancels all sibling tasks when one fails (animation 14)
-- `CancelledError` handling is fundamental to the race pattern with `wait(FIRST_COMPLETED)` (animation 20)
+**Celery** with its async backends (`aio-celery`, `celery[asyncio]`) maps task revocation to `task.cancel()`. When you call `result.revoke()` from the Celery client, the worker's event loop cancels the corresponding asyncio task. The revoked task receives `CancelledError` at its next await, runs its cleanup logic, and reports `REVOKED` status back to the result backend. Tasks that use `shield()` around database writes continue their commits even after revocation — a pattern used in financial processing workers where partial writes are worse than delayed completion.
+
+**gRPC-Python's async server** cancels handler coroutines when clients disconnect or deadlines expire. The `grpc.aio` server watches for client-side cancellation signals on the HTTP/2 stream and translates them into `asyncio.Task.cancel()` calls on the handler. This means a streaming RPC handler can detect client disconnect at any `await` point via `CancelledError`, clean up server-side resources (GPU memory, file handles, database cursors), and free capacity for other requests. Without this cooperative cancellation bridge between gRPC's C-core and Python's asyncio, disconnected clients would leave zombie handlers consuming resources until they naturally completed.

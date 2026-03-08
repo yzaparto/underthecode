@@ -15,7 +15,7 @@ export function Header() {
             to="/"
             className="text-xl font-bold tracking-tight text-text"
           >
-            under<span className="text-brand">the</span>code
+            <span className="text-brand">_</span>underthecode
           </Link>
           <nav className="flex items-center gap-6 text-sm text-muted">
             <Link

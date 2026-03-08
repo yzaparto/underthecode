@@ -1,68 +1,45 @@
 ## Introduction
 
-Every modern LLM streams responses token by token — ChatGPT, Claude, Gemini all do this. Instead of waiting 5 seconds for a full response, you see text appearing in real time. Python's `async for` combined with async generators (`async def` + `yield`) is the pattern that makes this work. The generator yields tokens one at a time, the consumer processes each immediately.
-
-Async generators are the natural fit for any data source that produces items over time. Unlike returning a list, a generator gives the consumer each item as soon as it is available. The consumer does not wait for the entire sequence to complete before it can start processing. This is the fundamental difference between batch and streaming.
-
-This animation shows an async generator `stream_llm()` yielding 5 tokens with a delay between each. The consumer in `main()` prints each token immediately as it arrives via `async for`. The generator stays alive in the event loop across all yields, toggling between running and suspended states.
+Every modern LLM streams responses token by token — ChatGPT, Claude, Gemini all do this. Instead of waiting 5 seconds for a full response, you see text appearing in real time. Python's `async for` combined with async generators (`async def` + `yield`) is the pattern that makes this work. The animation shows `stream_llm()` yielding 5 tokens with a delay between each. The consumer prints each token immediately via `async for`. The generator stays alive across yields, toggling between running and suspended states.
 
 ## Why This Matters
 
-Streaming transforms UX. Users see the first word in 100ms instead of waiting 5 seconds for the complete response. It also enables early cancellation — stop generating if the first tokens look wrong — and real-time processing pipelines. Every chat interface you have used relies on this pattern.
+Streaming transforms UX. Users see the first word in **100ms** instead of waiting 5 seconds for the complete response. It enables early cancellation — stop generating if the first tokens look wrong — and reduces memory usage by processing tokens individually instead of buffering a 10,000-token response.
 
-From a systems perspective, streaming reduces memory usage. Instead of buffering a 10,000-token response in memory before sending it to the client, you process and forward each token individually. This is critical for high-throughput services handling many concurrent requests.
+From a systems perspective, streaming is essential for high-throughput services. A non-streaming endpoint holds a response buffer in memory for the entire generation time. With 1,000 concurrent users generating 4K-token responses, that is 4 million tokens buffered simultaneously. Streaming reduces this to one token per connection at any given moment. The `async for` protocol is the consumer side of this — it drives the generator forward one `yield` at a time, processing each token before requesting the next.
 
-The `async for` protocol is also the foundation for consuming any async data source: WebSocket messages, server-sent events, database cursors, file streams. Mastering this pattern unlocks efficient handling of all streaming data in async Python.
-
-## When to Use This Pattern
-
-- LLM response streaming for ChatGPT-style token-by-token display in chat UIs
-- Server-sent events (SSE) endpoints that push real-time updates to browser clients
-- Real-time log tailing where new log lines are processed as they are written
-- WebSocket message processing for bidirectional real-time communication
-- Database cursor iteration over large result sets without loading everything into memory
-- Any data source that produces items over time rather than all at once
+The pattern extends beyond LLMs. Any data source that produces items over time — WebSocket messages, server-sent events, database cursors, file streams — fits the `async for` model. The async generator is the producer, `async for` is the consumer, and the `yield`/`__anext__` protocol is the handshake between them. Mastering this pattern unlocks efficient handling of all streaming data in async Python.
 
 ## What Just Happened
 
-The async generator `stream_llm()` yielded 5 tokens one at a time. After each `yield`, control returned to `main()` which printed the token immediately. The generator card stayed alive in the event loop across all yields, toggling between running and suspended.
+The async generator `stream_llm()` yielded 5 tokens one at a time. After each `yield`, control returned to `main()` which printed the token immediately. There was no buffering step — the first token was visible almost immediately while the last appeared several seconds later. The `async for` loop drove the generator forward by calling `__anext__()` on each iteration, which resumed the generator until the next `yield`. When the generator function returned, `StopAsyncIteration` was raised automatically and the loop exited cleanly.
 
-This is different from returning a list. The consumer got each token in real time as the generator produced it. There was no buffering step. The first token was visible almost immediately, while the last token appeared several seconds later.
+## When to Use
 
-The `async for` loop drove the generator forward. Each iteration called `__anext__()` on the generator, which resumed it until the next `yield`. When the generator function returned (no more yields), `StopAsyncIteration` was raised automatically and the loop exited cleanly.
+- LLM response streaming with `stream=True` for token-by-token display in chat UIs
+- Server-sent events (SSE) endpoints pushing real-time updates to browser clients
+- WebSocket message processing for bidirectional real-time communication
+- Database cursor iteration over large result sets via `async for row in cursor`
+- Real-time log tailing where new log lines are processed as they are written
+- File streaming that reads and processes large files chunk by chunk without full buffering
+- Audio and video chunk processing for real-time transcription or media pipelines
 
-## Keep in Mind
+## When to Avoid
 
-- `async def` + `yield` creates an async generator, not a coroutine — you cannot `await` it directly
-- `async for` is the consumer syntax that drives async generators and async iterators
-- `StopAsyncIteration` ends the loop automatically when the generator returns or is exhausted
-- Generators are tracked by the event loop and cleaned up on shutdown via `shutdown_asyncgens()`
-- You can also use `async for` with any object implementing `__aiter__()` and `__anext__()`
-- `yield` suspends the generator and returns a value, `await` suspends to wait for a result
+- When you need the complete result before processing — use `await` and collect the full response
+- Small payloads where the overhead of streaming exceeds the latency benefit
+- When the consumer is slower than the producer and you need backpressure — use a `Queue` with `maxsize`
+- Batch analytics where you aggregate all results anyway — streaming adds complexity for no UX gain
+- When the downstream protocol does not support streaming (e.g., some REST API clients)
+- CPU-bound token processing where each token requires heavy computation — the event loop will starve
+- When you need to retry the entire response on error — streaming makes atomic retry harder
 
-## Common Pitfalls
+## In Production
 
-- Trying to `await` an async generator, which does not work — use `async for` instead
-- Not closing generators on error, causing resource leaks — use `async with` or try/finally
-- Yielding from a non-async generator inside async code — use `async def` with `yield`
-- Buffering all tokens before yielding, which defeats the entire purpose of streaming
-- Not handling `GeneratorExit` for cleanup when the consumer stops iterating early
-- Forgetting that `async for` only works inside `async def` functions
+**OpenAI's Python SDK** implements streaming via `client.chat.completions.create(stream=True)`, which returns an `AsyncStream` object that implements `__aiter__` and `__anext__`. Each iteration yields a `ChatCompletionChunk` containing one token's delta. Under the hood, the SDK reads from an HTTP response body using chunked transfer encoding, parses SSE frames, and yields parsed objects. The `async for chunk in stream:` pattern in application code is consuming an async generator that wraps raw HTTP byte streaming.
 
-## Where to Incorporate This
+**FastAPI's `StreamingResponse`** accepts an async generator and forwards each yielded chunk to the client as it is produced. When building an LLM proxy, you create an async generator that consumes tokens from OpenAI or Anthropic and yields formatted SSE frames. FastAPI streams these to the browser with zero buffering. Uvicorn's ASGI implementation sends each chunk as a separate HTTP data frame, keeping memory constant regardless of response length.
 
-- LLM token streaming for chatbot UIs that display responses as they are generated
-- SSE endpoints for real-time dashboards that push updates to connected browsers
-- Streaming file processing that reads and processes files line by line
-- WebSocket message handlers that process incoming messages as they arrive
-- Database row iteration with `async for` over async database cursors
-- ETL pipeline stages that process records as they arrive rather than in batch
-- Audio and video chunk processing for real-time media applications
+**Anthropic's SDK** uses a `MessageStream` class that yields `RawMessageStreamEvent` objects. The streaming protocol is more structured than OpenAI's — events include `content_block_start`, `content_block_delta`, and `message_stop`. Each delta contains the incremental text. The SDK parses the SSE stream from the HTTP response and yields typed Python objects. Client code consumes these with `async for event in stream:`, identical to any other async generator pattern.
 
-## Related Patterns
-
-- `as_completed()` for task-level streaming of results as tasks finish (animation 10)
-- `aiohttp` streaming responses for HTTP-level streaming between services
-- `async with` for resource cleanup in generators that hold open connections
-- Async iterators (`__aiter__`/`__anext__`) as the protocol behind `async for`
-- `asyncio.Queue` for inter-task streaming where producer and consumer are separate tasks (animation 11)
+**LangChain** unifies streaming across providers through its `astream()` interface. When you call `chain.astream(input)`, LangChain creates an async generator that yields `AIMessageChunk` objects regardless of the underlying provider. Each chunk flows through the chain's middleware — callbacks, tracing, output parsers — as a streaming event. This lets you swap between OpenAI, Anthropic, and local models without changing your streaming consumption code.

@@ -7,7 +7,7 @@ test.describe('Home Page', () => {
 
   test('displays the main title with branding', async ({ page }) => {
     const title = page.locator('h1')
-    await expect(title).toContainText('underthecode')
+    await expect(title).toContainText('_underthecode')
     await expect(title.locator('span')).toHaveClass(/text-brand/)
   })
 

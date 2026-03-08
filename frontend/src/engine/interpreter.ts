@@ -88,5 +88,13 @@ function applyAction(state: AnimationState, action: StepAction): AnimationState 
         ...state,
         outputLines: [...state.outputLines, { id: action.id, text: action.text, time: action.time }],
       }
+
+    case 'updateOutput':
+      return {
+        ...state,
+        outputLines: state.outputLines.map((o) =>
+          o.id === action.id ? { ...o, text: action.text, time: action.time ?? o.time } : o,
+        ),
+      }
   }
 }

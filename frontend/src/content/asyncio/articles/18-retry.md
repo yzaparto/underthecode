@@ -1,65 +1,51 @@
 ## Introduction
 
-API calls fail — network errors, rate limits, server overloads, transient bugs. A retry wrapper with exponential backoff automatically retries failed operations with increasing delays, giving the remote service time to recover. The delay doubles each attempt: 1s, 2s, 4s, 8s. This is the standard approach used by AWS, Google Cloud, and every major API provider in their client libraries.
+This animation shows a `retry()` wrapper around a `call_llm("claude")` call that fails with `ConnectionError` on every attempt. Three attempts are made with exponential backoff between them: 1 second after attempt 1 (2^0), 2 seconds after attempt 2 (2^1). The IO cards show each attempt and the growing delay between them. After attempt 3, all retries are exhausted and the original exception is re-raised.
 
-This animation shows a `retry()` function wrapping a `call_llm("claude")` call that always fails with a `ConnectionError`. Three attempts are made with growing backoff delays between them. The IO cards are labeled to make the exponential growth visible — 1 second after the first failure, 2 seconds after the second.
-
-Exponential backoff is not just politeness toward the remote service. When a service is overloaded, immediate retries from thousands of clients make the problem worse. Backing off gives the service breathing room to recover, and adding jitter prevents all clients from retrying at the same instant.
+In a real scenario, the service would recover after 1 or 2 retries. The exponential growth ensures early retries happen quickly while later retries give increasingly troubled services more breathing room. The total elapsed time is 6 seconds: three 1-second calls plus 1-second and 2-second backoff delays.
 
 ## Why This Matters
 
-Without retry, a single transient error fails the entire operation — even if the very next attempt would have succeeded. A 1-second network blip at 3 AM becomes a failed batch job, a lost customer request, or a broken pipeline. Retry turns transient failures into invisible hiccups.
+Without retry, a single transient error fails the entire operation — even if the very next attempt would succeed. A 500ms network blip at 3 AM becomes a failed batch job, a lost customer request, or a broken pipeline. Retry turns transient failures into invisible hiccups that users never notice.
 
-Without backoff, rapid retries can overwhelm the service you depend on, making the problem worse. If an LLM provider returns 429 (rate limit), immediately retrying hammers it harder. Exponential backoff is the industry standard because it is respectful to the provider and resilient for your users.
+Without **backoff**, rapid retries overwhelm the service you depend on, making the problem worse. If an LLM provider returns 429 (rate limit), immediately retrying hammers it harder. Thousands of clients retrying simultaneously after an outage create a **thundering herd** that re-crashes the service the moment it recovers. Exponential backoff with **jitter** (`random.uniform(0, delay)`) spreads retry attempts across time, giving the service a gradual ramp-up instead of an instant spike.
 
-The combination of retry count, backoff multiplier, maximum delay cap, and jitter gives you fine-grained control over the tradeoff between responsiveness (how fast you recover) and politeness (how much load you add during an outage). Getting this right is the difference between a system that self-heals and one that amplifies failures.
-
-## When to Use This Pattern
-
-- LLM API calls that may hit rate limits (429) or server errors (500, 502, 503)
-- Database connection retries after transient failures like connection pool exhaustion
-- Webhook delivery to potentially unavailable endpoints that may come back online
-- File uploads to cloud storage with intermittent network issues causing partial failures
-- Any idempotent operation against a remote service that experiences transient errors
-- Network operations in unreliable environments like mobile networks or cross-region calls
+The combination of retry count, backoff multiplier, maximum delay cap, and jitter gives fine-grained control over the tradeoff between **responsiveness** (how fast you recover from a transient error) and **politeness** (how much additional load you generate during an outage). Getting these parameters right is the difference between a system that self-heals and one that amplifies failures. A common production configuration is 3 retries, 1-second base delay, 2x multiplier, 60-second cap, and full jitter — this recovers from transient blips in 1-3 seconds while backing off to 60 seconds maximum during sustained outages.
 
 ## What Just Happened
 
-Three attempts were made, each taking 1 second for the API call itself, and all three failed with `ConnectionError`. Between attempts, backoff delays grew exponentially: 1 second after attempt 1 (2^0), 2 seconds after attempt 2 (2^1).
+Three attempts were made, each taking 1 second for the API call itself, and all three failed with `ConnectionError`. Between attempts, backoff delays grew exponentially: 1 second after attempt 1 (2^0), 2 seconds after attempt 2 (2^1). If there had been a fourth attempt, the delay would have been 4 seconds (2^2).
 
-After attempt 3, all retries were exhausted and the original exception was re-raised to the caller. Total elapsed time: 1s (call) + 1s (backoff) + 1s (call) + 2s (backoff) + 1s (call) = 6 seconds.
+After attempt 3, all retries were exhausted and the original `ConnectionError` was re-raised to the caller. Total elapsed time: 1s (call) + 1s (backoff) + 1s (call) + 2s (backoff) + 1s (call) = 6 seconds. The caller received the final exception and could decide whether to surface it to the user, fall back to a cached response, or escalate to a circuit breaker.
 
-In a real scenario, the service would likely recover after 1 or 2 retries. The exponential growth means early retries happen quickly (1 second) while later retries back off significantly (4s, 8s, 16s), giving increasingly troubled services more time to recover.
+The retry function used `except Exception` (not `except BaseException`) to avoid catching `CancelledError`. This is critical — if `CancelledError` is caught and retried, the task never actually cancels when the system requests shutdown, creating a zombie coroutine that ignores cancellation signals.
 
-## Keep in Mind
+## When to Use
 
-- Always re-raise `CancelledError` by using `except Exception` not `except BaseException` to avoid retrying cancellation
-- Add jitter with `random.uniform(0, delay)` to prevent thundering herd when many clients retry at the exact same time
-- Set a maximum backoff cap like 60 seconds so delays do not grow absurdly large after many failures
-- Make sure the operation being retried is idempotent — safe to repeat without creating duplicate side effects
-- Set a maximum retry count to avoid infinite retry loops that consume resources forever without resolution
+- LLM API calls that hit rate limits (429), server errors (500, 502, 503), or transient timeouts
+- Database connection retries after transient failures like connection pool exhaustion or brief network partitions
+- HTTP webhook delivery to endpoints that may be temporarily unreachable during deployments
+- File uploads to cloud storage with intermittent network issues causing partial transfer failures
+- Any **idempotent** operation against a remote service that experiences transient errors
+- gRPC calls with `UNAVAILABLE` or `DEADLINE_EXCEEDED` status codes that indicate retriable conditions
+- DNS resolution retries when upstream resolvers are briefly unreachable
 
-## Common Pitfalls
+## When to Avoid
 
-- Retrying non-idempotent operations like creating database records or sending emails, which produces duplicates
-- Catching `CancelledError` and retrying it, so the task never actually cancels when the system requests shutdown
-- Having no maximum retry limit, which creates an infinite retry loop consuming resources and log space forever
-- Omitting jitter so all clients retry at the exact same time after an outage, creating a thundering herd that re-crashes the service
-- Retrying 4xx client errors like 400 Bad Request or 401 Unauthorized that will never self-resolve no matter how many times you retry
+- Non-idempotent operations like creating database records, sending emails, or charging credit cards — retrying creates duplicates
+- Client errors (400, 401, 403, 404) that indicate bad input and will never self-resolve regardless of retry count
+- Operations where the delay budget is exhausted — if the user is waiting and 3 retries take 15 seconds, they have already left
+- Calls inside a tight loop where even a 1-second backoff per item makes batch processing take hours
+- When a circuit breaker should trip instead — after N consecutive failures, stop retrying and fail fast for all callers
+- Cancellation signals (`CancelledError`) which must propagate immediately for graceful shutdown to work
+- Operations with side effects that partially completed — retry may create an inconsistent state
 
-## Where to Incorporate This
+## In Production
 
-- LLM API calls with provider-specific error handling for 429 rate limits and 500+ server errors
-- Database reconnection logic after connection pool exhaustion or transient network partitions
-- Webhook delivery systems with retry queues that back off per-endpoint based on failure history
-- Distributed task queues implementing Celery-style retry with configurable backoff per task type
-- Health check recovery after transient failures where the monitored service may need seconds to restart
-- Cloud storage upload with resumable retry that continues from the last successful byte offset
+**The AWS SDK (boto3)** implements retry with exponential backoff as a core feature. The default retry mode uses a base delay of 1 second, a maximum of 5 retries for most services, and full jitter (`random.uniform(0, base * 2^attempt)`). boto3 classifies errors into retriable (throttling, transient, server errors) and non-retriable (validation, access denied) categories. The `Adaptive` retry mode goes further — it tracks a token bucket per service endpoint and adjusts retry rates based on observed throttling, effectively implementing client-side rate limiting that adapts to the server's capacity in real time. This is the most sophisticated retry implementation in any major SDK and handles burst traffic patterns that simpler retry strategies cannot.
 
-## Related Patterns
+**The tenacity library** is the standard Python retry library, used by LangChain, Airflow, and hundreds of production systems. It provides decorator-based retry with composable stop conditions (`stop_after_attempt`, `stop_after_delay`), wait strategies (`wait_exponential`, `wait_random_exponential`), and retry predicates (`retry_if_exception_type`, `retry_if_result`). The key design insight is that retry configuration is separated from business logic — `@retry(wait=wait_exponential(multiplier=1, max=60), stop=stop_after_attempt(5))` wraps any function without modifying its internals. tenacity also supports async natively with `@retry` on `async def` functions, integrating with the event loop's sleep instead of blocking.
 
-- Timeouts per individual attempt to prevent a single hung call from consuming the entire retry budget
-- Circuit breaker pattern that stops retrying entirely after N consecutive failures to avoid wasting resources
-- `tenacity` library for production-grade retry with decorators, full configuration, and callback hooks
-- Semaphore for rate limiting outbound calls to prevent needing retries in the first place
-- Graceful degradation with cached fallback responses when all retries are exhausted and the service is down
+**httpx's transport-level retry** operates below the application layer. The `httpx.AsyncHTTPTransport(retries=3)` parameter retries on connection-level failures (TCP reset, DNS timeout, TLS handshake failure) without retrying on HTTP-level errors. This separation is deliberate — connection failures are always safe to retry because no request body was sent, while HTTP 500 errors may indicate a request that was received and partially processed. The OpenAI Python SDK builds on httpx and adds its own application-level retry on top, retrying 429 and 500+ responses with exponential backoff. This two-layer retry — transport retries for connection failures, application retries for server errors — is the standard architecture for resilient HTTP clients.
+
+**Celery task retries** use `self.retry(countdown=2**self.request.retries, max_retries=5)` to re-enqueue failed tasks with exponential backoff. Unlike in-process retry which blocks a worker, Celery retry puts the task back in the broker queue with a visibility delay, freeing the worker to process other tasks during the backoff period. This is a fundamentally different retry architecture — the retry state lives in the message broker (Redis or RabbitMQ), not in process memory, so it survives worker crashes and restarts. The backoff delay is enforced by the broker's delayed-delivery mechanism, not by sleeping in the worker.

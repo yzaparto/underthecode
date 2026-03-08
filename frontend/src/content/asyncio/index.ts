@@ -41,3 +41,31 @@ export const animations = [
   barrier,
   waitFirst,
 ]
+
+export const asyncioSections = [
+  {
+    title: 'Part 1: The Basics',
+    description: 'Why concurrency matters and how async/await works',
+    animations: [0, 1, 2, 3],
+  },
+  {
+    title: 'Part 2: Avoiding Blocking',
+    description: 'Blocking the event loop, escape hatches, and scheduling patterns',
+    animations: [4, 5, 6, 7],
+  },
+  {
+    title: 'Part 3: Control Flow',
+    description: 'Timeouts, processing results as they arrive, queues, and rate limiting',
+    animations: [8, 9, 10, 11],
+  },
+  {
+    title: 'Part 4: Streaming & Coordination',
+    description: 'LLM streaming, error handling, and agent coordination',
+    animations: [12, 13, 14, 15],
+  },
+  {
+    title: 'Part 5: Production Patterns',
+    description: 'Graceful shutdown, retry, synchronization, and racing',
+    animations: [16, 17, 18, 19],
+  },
+]

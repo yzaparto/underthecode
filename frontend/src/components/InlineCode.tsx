@@ -5,12 +5,14 @@ import { getTheme } from '../engine/theme'
 export function Prose({ text }: { text: string }): ReactNode {
   const { theme } = useTheme()
   const t = getTheme(theme)
-  const parts = text.split(/(`[^`]+`)/)
-  return parts.map((part, i) =>
-    part.startsWith('`') && part.endsWith('`') ? (
-      <code key={i} className={t.inlineCode}>{part.slice(1, -1)}</code>
-    ) : (
-      <span key={i}>{part}</span>
-    ),
-  )
+  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/)
+  return tokens.map((tok, i) => {
+    if (tok.startsWith('`') && tok.endsWith('`')) {
+      return <code key={i} className={t.inlineCode}>{tok.slice(1, -1)}</code>
+    }
+    if (tok.startsWith('**') && tok.endsWith('**')) {
+      return <strong key={i} className="font-semibold text-text">{tok.slice(2, -2)}</strong>
+    }
+    return <span key={i}>{tok}</span>
+  })
 }

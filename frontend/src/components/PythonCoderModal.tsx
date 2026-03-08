@@ -194,10 +194,10 @@ export function PythonCoderPanel({ open, onClose }: PythonCoderPanelProps) {
                   defaultLanguage="python"
                   value={code}
                   onChange={(value) => setCode(value ?? '')}
-                  theme={isDark ? 'dracula' : 'underthecode-light'}
+                  theme={isDark ? 'dracula' : '_underthecode-light'}
                   beforeMount={(monaco) => {
                     monaco.editor.defineTheme('dracula', DRACULA_THEME)
-                    monaco.editor.defineTheme('underthecode-light', LIGHT_THEME)
+                    monaco.editor.defineTheme('_underthecode-light', LIGHT_THEME)
                   }}
                   options={{
                     automaticLayout: true,

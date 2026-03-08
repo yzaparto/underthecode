@@ -1,65 +1,50 @@
 ## Introduction
 
-Four ways to schedule concurrent tasks, all achieving the same result but with different trade-offs. Manual `create_task` plus individual `await` gives fine-grained control over each task's lifecycle. `gather(*coroutines)` is a clean one-liner that creates tasks internally. `gather(*tasks)` gives you task handles for inspection or cancellation. `TaskGroup` (Python 3.11+) adds structured concurrency with automatic cancellation on failure.
+Four ways to schedule concurrent tasks, all achieving the same wall-clock time but with fundamentally different trade-offs. Manual `create_task` plus individual `await` gives fine-grained lifecycle control. `gather(*coroutines)` is a clean one-liner that creates tasks internally. `gather(*tasks)` gives you task handles for cancellation and inspection. `TaskGroup` (Python 3.11+) enforces structured concurrency with automatic cancellation on failure.
 
-Choosing the right scheduling pattern depends on your error handling needs, your Python version, and how much control you need over individual task lifecycles. All four patterns achieve concurrency — the difference is in ergonomics, error semantics, and what happens when things go wrong.
-
-This animation runs the same pair of coroutines through all four patterns. Each produces the same 2-second total time, proving that the concurrency behavior is identical. The differences only surface when you need to cancel tasks, handle errors, or inspect intermediate state.
+This animation runs the same pair of coroutines through all four patterns. Each produces the same 2-second total time, proving that concurrency behavior is identical. The differences surface only when you need to cancel tasks, handle errors, or inspect intermediate state.
 
 ## Why This Matters
 
-Knowing all four patterns prevents lock-in to one approach. Developers who only know `gather()` struggle when they need to cancel individual tasks or handle partial failures gracefully. Developers who only know `create_task` write verbose boilerplate when a one-liner would suffice.
+Developers who only know `gather()` struggle when they need to cancel individual tasks mid-flight or handle partial failures without losing completed results. Developers who only know `create_task` write verbose boilerplate when a one-liner would suffice. Knowing all four patterns lets you match the scheduling API to the error-handling requirements of each call site.
 
-Each pattern has different error handling behavior that can silently cause bugs. `gather()` swallows exceptions by default — if one task fails, the others keep running and you might never notice the failure. `TaskGroup` takes the opposite approach and cancels everything on the first failure, which prevents silent corruption but can surprise you if partial success is acceptable.
+`gather()` has dangerous default behavior: without `return_exceptions=True`, if one task raises, the exception propagates and the remaining tasks keep running as orphans. You get an exception in your code but leaked coroutines consuming resources in the background. `TaskGroup` takes the opposite stance — one failure cancels all siblings immediately and raises an `ExceptionGroup`. This fail-fast model prevents silent corruption but surprises teams that expect partial success.
 
-Choosing wrong means either silent bugs or unexpected crashes in production. Understanding all four patterns lets you pick the right tool for each situation and recognize when a teammate has chosen the wrong one in code review.
-
-## When to Use This Pattern
-
-- Manual `create_task` when you need fine-grained control over task lifecycle, cancellation, or inspection
-- `gather(*coroutines)` for simple fan-out where you need all results and don't need task handles
-- `gather(*tasks)` when you want both concurrency and the ability to cancel or check individual tasks
-- `TaskGroup` for Python 3.11+ when any failure should cancel all sibling tasks immediately
-- `gather(return_exceptions=True)` when partial success is acceptable and you want to inspect each result individually
-- `TaskGroup` when you want guaranteed cleanup — all tasks either complete or are cancelled when the block exits
+Choosing wrong means either **silent bugs** (gather swallowing failures) or **unexpected cancellations** (TaskGroup aborting work you wanted to keep). The scheduling pattern is an error-handling decision disguised as a concurrency API.
 
 ## What Just Happened
 
-All four patterns produced the same 2-second total execution time. Two coroutines that each sleep for different durations ran concurrently under every pattern, proving that the scheduling behavior is identical regardless of which API you use.
+All four patterns produced identical 2-second wall-clock time. Two coroutines sleeping for different durations ran concurrently under every pattern, proving the scheduling behavior is the same regardless of API choice.
 
-The difference is entirely in ergonomics and error semantics. `gather()` returned results in input order — the first coroutine's result is always at index 0 regardless of which finished first. `TaskGroup` would have cancelled all tasks if any single one had raised an exception, providing fail-fast behavior.
+`gather()` returned results in **input order** — the first coroutine's result is always at index 0 regardless of which finished first. The manual `create_task` approach required explicit `await` for each task but allowed inspecting `task.done()`, calling `task.cancel()`, or attaching `add_done_callback()` between creation and awaiting. `TaskGroup` guaranteed that when the `async with` block exited, every task was either completed or cancelled — no orphaned coroutines possible.
 
-The manual approach gave the most control — you could inspect `task.done()`, call `task.cancel()`, or add callbacks — but required the most code. `gather()` and `TaskGroup` are higher-level abstractions that handle the common cases with less boilerplate.
+The ergonomic difference is real: `gather()` needed 1 line, manual `create_task` needed 4+, and `TaskGroup` needed an `async with` block with explicit `create_task` calls on the group. `TaskGroup` does not return results directly like `gather()` — you store results via task references or shared mutable state.
 
-## Keep in Mind
+## When to Use
 
-- `gather()` swallows exceptions by default — failed tasks return their exception object only if you pass `return_exceptions=True`
-- `TaskGroup` raises `ExceptionGroup` on failure, which requires `except*` syntax (Python 3.11+) to handle selectively
-- `TaskGroup` guarantees all tasks complete or are cancelled when the `async with` block exits — no orphaned tasks
-- `gather()` returns results in creation order, not completion order — the slowest task's result still appears at its original index
-- `TaskGroup` is Python 3.11+ only — use `gather()` or manual `create_task` for older Python versions
-- Mixing scheduling patterns in one function makes code harder to read and reason about
+- Manual `create_task` when you need to cancel, inspect, or add callbacks to individual tasks during execution
+- `gather(*coroutines)` for simple fan-out where you need all results returned in input order with minimal boilerplate
+- `gather(*tasks)` when you want both concurrency and the ability to cancel specific tasks by reference
+- `gather(return_exceptions=True)` when partial success is acceptable and you want to inspect each result individually
+- `TaskGroup` (Python 3.11+) when any failure should cancel all sibling tasks immediately with no orphan risk
+- `TaskGroup` when you need guaranteed cleanup — every task completes or is cancelled when the block exits
 
-## Common Pitfalls
+## When to Avoid
 
-- Using `gather()` without `return_exceptions=True` and losing error information silently when one task fails
-- Forgetting that `TaskGroup` cancels ALL sibling tasks if one fails — this may not be what you want if partial results are valuable
-- Mixing scheduling patterns in the same function, making it confusing to understand the concurrency and error semantics
-- Not understanding that `gather()` creates tasks internally from bare coroutines — passing a coroutine is fine
-- Assuming `TaskGroup` results are accessible like `gather()` results — you need to store results via task references or shared state
-- Ignoring `ExceptionGroup` handling with `TaskGroup` and letting unhandled exception groups crash the application
+- Using `gather()` without `return_exceptions=True` when task failures need to be observed — exceptions are silently swallowed for non-failing tasks while orphans run
+- Using `TaskGroup` when partial results are valuable — one failure cancels everything including successfully-running siblings
+- Mixing scheduling patterns in the same function, making concurrency and error semantics impossible to reason about
+- Using manual `create_task` for simple parallel calls where `gather()` is clearer and less error-prone
+- `TaskGroup` on Python < 3.11 where it does not exist — fall back to `gather()` or the `anyio` backport
+- Relying on `gather()` result ordering when you actually need completion-order processing — use `as_completed()` instead
+- Using `TaskGroup` without understanding `ExceptionGroup` and `except*` syntax, causing unhandled exception groups to crash the application
 
-## Where to Incorporate This
+## In Production
 
-- Parallel model comparison using `gather` to call multiple LLMs and collect all responses
-- Multi-agent orchestration with `TaskGroup` where one agent failure should abort the entire pipeline
-- Background task spawning with `create_task` for fire-and-forget operations like logging or metrics
-- Batch API calls with `gather` to send many requests concurrently and collect results in order
-- Any concurrent fan-out where error handling requirements determine which pattern to choose
+**FastAPI** dependency injection resolves independent dependencies concurrently using `gather()`. When a route handler declares multiple `Depends()` parameters with no inter-dependency, Starlette's dependency solver groups them and runs them in parallel via `asyncio.gather()`. This is why adding a second independent database query to a FastAPI endpoint does not double the response time — both queries execute concurrently and results are collected in declaration order. Teams that understand this can restructure slow endpoints by breaking serial dependency chains into parallel-eligible groups.
 
-## Related Patterns
+**LangChain** uses `gather()` extensively in its `RunnableParallel` primitive. When you define a chain like `RunnableParallel(summary=summarize_chain, sentiment=sentiment_chain)`, LangChain schedules both sub-chains concurrently with `gather()` and collects results into a dict. The `return_exceptions=True` flag is not set by default, which means one failing sub-chain crashes the entire parallel step — a known pain point that drives teams toward custom `TaskGroup`-based orchestrators for fault-tolerant multi-agent pipelines.
 
-- `as_completed()` for processing results in completion order instead of creation order (animation 10)
-- `wait()` with `return_when` flags for fine-grained control over when to stop waiting (animation 20)
-- Structured concurrency principles that `TaskGroup` implements — no task outlives its parent scope
-- Error handling with `ExceptionGroup` and `except*` syntax for selective exception matching (animation 14)
+**Anthropic's SDK** and **OpenAI's SDK** both recommend `gather()` for parallel API calls in their async documentation. The pattern `results = await asyncio.gather(client.messages.create(...), client.messages.create(...))` is idiomatic for comparing multiple model responses or running prompt variants concurrently. Production teams wrap this in `gather(return_exceptions=True)` to handle per-call rate limiting gracefully — a 429 on one call should not abort the others.
+
+**Kubernetes operators** written with `kopf` (Kubernetes Operator Pythonic Framework) use `TaskGroup` for reconciliation loops where one sub-resource failure should abort the entire reconciliation cycle. If creating a ConfigMap succeeds but creating the associated Deployment fails, the operator needs to roll back — `TaskGroup`'s automatic sibling cancellation prevents the operator from leaving the cluster in a half-configured state. The `ExceptionGroup` propagation lets the operator log exactly which sub-resources failed and which were cancelled.

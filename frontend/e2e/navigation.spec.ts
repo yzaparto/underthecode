@@ -5,7 +5,7 @@ test.describe('Navigation', () => {
     test('logo navigates to home', async ({ page }) => {
       await page.goto('/articles/python-asyncio/5')
       
-      const logo = page.locator('header a', { hasText: 'underthecode' })
+      const logo = page.locator('header a', { hasText: '_underthecode' })
       await logo.click()
       
       await expect(page).toHaveURL('/')
@@ -83,7 +83,7 @@ test.describe('Navigation', () => {
   test.describe('Flow: Home to Animation and Back', () => {
     test('complete user flow: home → overview → animation → overview → home', async ({ page }) => {
       await page.goto('/')
-      await expect(page.locator('h1', { hasText: 'underthecode' })).toBeVisible()
+      await expect(page.locator('h1', { hasText: '_underthecode' })).toBeVisible()
       
       const articleCard = page.locator('a[href="/articles/python-asyncio"]')
       await articleCard.click()
@@ -97,7 +97,7 @@ test.describe('Navigation', () => {
       await backToOverview.click()
       await expect(page).toHaveURL('/articles/python-asyncio')
       
-      const logo = page.locator('header a', { hasText: 'underthecode' })
+      const logo = page.locator('header a', { hasText: '_underthecode' })
       await logo.click()
       await expect(page).toHaveURL('/')
     })

@@ -1,68 +1,49 @@
+## The Concept
+
+**PEP 654** introduced `ExceptionGroup` and the `except*` syntax in Python 3.11, directly inspired by **Trio's structured concurrency** model. The core insight is that concurrent code can produce **multiple simultaneous failures**, and traditional `try/except` only handles one exception at a time. An `ExceptionGroup` is a container that holds multiple exceptions from concurrent tasks. `except*` pattern-matches against the types inside the group — catching `ValueError` while letting `TypeError` propagate untouched. This completes Python's structured concurrency story: `TaskGroup` manages task lifecycles, `ExceptionGroup` collects their failures, and `except*` gives you surgical control over which failures to handle. The design mirrors Trio's nursery model, where a scope owns its child tasks and is responsible for all their outcomes.
+
 ## Introduction
 
-In a multi-agent system, what happens when one agent crashes? With `TaskGroup`, if any task raises an exception, all sibling tasks are automatically cancelled. The errors are collected into an `ExceptionGroup`. Python 3.11's `except*` syntax lets you match and handle specific exception types from within the group — catching `ValueError` while letting `TypeError` propagate.
-
-This is structured error handling for concurrent code. Just as try/except handles errors in sequential code, `TaskGroup` + `except*` handles errors when multiple tasks are running simultaneously. The key difference is that multiple errors can occur at the same time, so you need a container (`ExceptionGroup`) and a matching syntax (`except*`).
-
-This animation demonstrates three agents starting concurrently inside a `TaskGroup`. One agent raises a `ValueError` after 1 second. The `TaskGroup` immediately cancels the other two agents, collects the error into an `ExceptionGroup`, and the `except* ValueError` clause handles it cleanly. Execution continues normally after the handler.
+In a multi-agent system, what happens when one agent crashes? With `TaskGroup`, if any task raises an exception, all sibling tasks are **automatically cancelled**. The errors are collected into an `ExceptionGroup`. The animation shows three agents starting concurrently inside a `TaskGroup`. After 1 second, the coder agent raises `ValueError`. The `TaskGroup` cancels the other two agents, collects the error, and the `except* ValueError` clause handles it cleanly. Execution continues normally after the handler.
 
 ## Why This Matters
 
-Without structured error handling, a failed agent leaves siblings running as zombies, leaking resources and producing stale results. `TaskGroup` + `ExceptionGroup` gives you deterministic cleanup: every task is either completed or cancelled when the block exits. No orphans, no leaks, no ambiguity.
+Without structured error handling, a failed task leaves siblings running as **zombies** — leaking memory, holding connections, producing stale results nobody reads. In a multi-agent LLM pipeline, a zombie agent continues generating tokens that are never consumed, wasting API credits. `TaskGroup` + `ExceptionGroup` gives you deterministic cleanup: every task is either completed or cancelled when the block exits.
 
-This matters enormously for production systems. Leaked tasks consume memory, hold open connections, and can produce results that arrive after the caller has moved on. In a multi-agent LLM pipeline, a zombie agent might continue generating tokens that are never read, wasting API credits and compute.
+The `except*` syntax solves a problem that was previously impossible in Python. When `gather(return_exceptions=True)` collects errors, you get a flat list and must manually iterate to find and handle each type. With `except*`, you write handlers that look like normal exception handling but operate on collections. Multiple `except*` clauses can each handle different types from the same group. Unhandled types propagate automatically in a new `ExceptionGroup`. This is pattern matching for concurrent errors.
 
-The `except*` syntax is Python's answer to a fundamental problem: when you run things concurrently, you need a way to handle multiple simultaneous failures. Traditional try/except handles one exception at a time. `except*` lets you pattern-match against a collection of exceptions, handling each type differently within the same handler block.
-
-## When to Use This Pattern
-
-- Multi-agent orchestration where one failure should stop all agents immediately
-- Microservice fan-out calls where partial results are meaningless without the full set
-- Parallel data processing with partial failure handling and deterministic cleanup
-- Any structured concurrency scenario where tasks should succeed or fail as a group
-- Pipeline stages where downstream stages depend on all upstream stages completing
-- Validation checks that run concurrently and must all pass for the operation to proceed
+The guarantees are strong. `SystemExit` and `KeyboardInterrupt` are never wrapped — they propagate directly. All tasks are guaranteed finished (completed or cancelled) before the `async with` block exits. Full tracebacks are preserved for every exception in the group. You can nest `TaskGroup` blocks for hierarchical error handling across task subtrees.
 
 ## What Just Happened
 
-Three agents started concurrently inside the `TaskGroup`. After 1 second, the coder agent raised `ValueError`. The `TaskGroup` immediately cancelled researcher and reviewer — they never printed "done." The cancellation was automatic and deterministic.
+Three agents started concurrently inside the `TaskGroup`. After 1 second, the coder agent raised `ValueError`. The `TaskGroup` immediately cancelled researcher and reviewer — they never printed "done." The `except* ValueError` clause caught the specific error from inside the `ExceptionGroup`. This is different from `except ExceptionGroup` — `except*` matches types **inside** the group. If there had been a `TypeError` too, it would have propagated in a separate `ExceptionGroup`. Execution continued normally after the handler, with all tasks guaranteed finished.
 
-The `except* ValueError` clause caught the specific error from the `ExceptionGroup`. This is different from `except ExceptionGroup` — the `except*` syntax matches types inside the group, not the group itself. Only the `ValueError` was handled; if there had been a `TypeError` too, it would have propagated.
+## When to Use
 
-Execution continued normally after the handler. The `TaskGroup` guaranteed that all three tasks were either completed or cancelled before the `async with` block exited. No tasks were left running in the background.
+- Multi-agent orchestration where one agent failure should cancel and clean up all siblings
+- Microservice fan-out where partial results are meaningless without the complete set
+- Parallel validation checks that must all pass before an operation proceeds
+- Pipeline stages where downstream depends on all upstream completing successfully
+- Financial transaction processing where partial completion is worse than total rollback
+- Batch API calls where you need to distinguish transient errors from permanent failures
+- Test infrastructure where environment failure should abort all remaining test cases
 
-## Keep in Mind
+## When to Avoid
 
-- `except*` matches types INSIDE the group, not the `ExceptionGroup` itself
-- Multiple `except*` clauses can handle different exception types from the same group
-- `SystemExit` and `KeyboardInterrupt` are NOT wrapped in the group — they propagate directly
-- All tasks are guaranteed completed or cancelled when `async with` exits the `TaskGroup`
-- The `ExceptionGroup` preserves full tracebacks for every exception in the group
-- You can nest `TaskGroup` blocks for hierarchical error handling across task subtrees
+- When partial success is acceptable — use `gather(return_exceptions=True)` and handle individually
+- Simple sequential error handling where standard `try/except` is sufficient
+- When you need to continue despite failures — `TaskGroup` cancels all siblings on first error
+- Python versions before 3.11 where `ExceptionGroup` and `except*` do not exist
+- When error types are not distinguishable — `except*` is most useful with typed exception hierarchies
+- Single-task scenarios where there is no concurrency to structure
+- When you want best-effort results from as many tasks as possible, not all-or-nothing
 
-## Common Pitfalls
+## In Production
 
-- Using `except ExceptionGroup` when you mean `except*` for matching inner exception types
-- Assuming task completion order matters for error handling — cancellation is non-deterministic
-- Re-raising inside `except*` without understanding that it creates a new `ExceptionGroup`
-- Not logging information about cancelled tasks, losing visibility into what was in progress
-- Using `TaskGroup` when partial success is acceptable — use `gather(return_exceptions=True)` instead
-- Catching too broadly with `except* Exception`, which swallows errors you should propagate
+**FastAPI** with background task groups uses `TaskGroup` to manage concurrent request processing. When a request handler spawns multiple sub-tasks — fetching from a cache, querying a database, calling an LLM — a `TaskGroup` ensures all are cancelled if any fails. Without this, a failed database query leaves the LLM call running and its result is discarded. In practice, FastAPI middleware wraps request handling in a `TaskGroup` scope, and Starlette's `anyio` backend propagates cancellation through the task tree.
 
-## Where to Incorporate This
+**Kubernetes operators** written with `kopf` (Kubernetes Operator Pythonic Framework) use structured concurrency internally. When an operator reconciles a resource, it may spawn concurrent tasks to update multiple dependent resources. If any update fails, the operator must cancel in-progress updates and report a coherent error status. `TaskGroup` provides exactly this guarantee — all updates succeed or all are rolled back, with the `ExceptionGroup` containing every failure for the status report.
 
-- Multi-agent LLM pipelines where critical agent failure should stop all agents
-- Parallel API calls to multiple services with graceful degradation on failure
-- Batch processing with error isolation where one bad batch should not poison others
-- Microservice orchestration with rollback on failure of any dependent service
-- Data validation pipelines where one invalid record should halt processing
-- Concurrent test execution where infrastructure failure should abort remaining tests
-- Financial transaction processing where partial completion is worse than total failure
+**Anthropic's SDK** uses structured error handling internally for streaming connections. When a `MessageStream` encounters a connection error mid-stream, it must cancel any pending response parsing and clean up the HTTP connection. The SDK wraps its internal tasks in structured scopes so that a network error during streaming does not leave orphaned parsing coroutines consuming CPU. The resulting exception preserves the original network error plus any cleanup failures in an `ExceptionGroup`.
 
-## Related Patterns
-
-- `gather(return_exceptions=True)` for non-cancelling error collection (animation 7)
-- Cancellation and shield for protecting critical operations from cancellation (animation 8)
-- Graceful shutdown for cleanup during cancellation of long-running services (animation 17)
-- `TaskGroup` scheduling patterns for structured task lifecycle management (animation 7)
-- Retry with backoff for recovering from transient errors before giving up (animation 18)
+**Celery** canvas workflows (chains, groups, chords) face the same multi-task error problem at the distributed level. When a `group` of tasks runs in parallel and one fails, Celery must decide whether to cancel siblings or let them complete. The `link_error` callback receives the equivalent of an `ExceptionGroup` — all failures from the group. Modern Celery patterns map directly to `TaskGroup` semantics: the chord callback only fires if all group tasks succeed, mirroring the all-or-nothing guarantee.
