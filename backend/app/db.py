@@ -1,7 +1,9 @@
+import os
+
 import aiosqlite
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "data" / "votes.db"
+DB_PATH = Path(os.environ.get("DB_PATH", Path(__file__).parent.parent / "data" / "votes.db"))
 
 
 async def init_db() -> None:

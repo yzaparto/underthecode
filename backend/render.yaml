@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: underthecode-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://underthecode.com,https://www.underthecode.com
+      - key: PYTHON_VERSION
+        value: "3.12"
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/backend/data
+      sizeGB: 1
