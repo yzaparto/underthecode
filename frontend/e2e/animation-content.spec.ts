@@ -97,7 +97,7 @@ test.describe('Animation Content', () => {
     })
 
     test('When to Use section has bullet list', async ({ page }) => {
-      const whenSection = page.locator('section').filter({ has: page.locator('h2', { hasText: 'When to Use This Pattern' }) })
+      const whenSection = page.locator('section').filter({ has: page.locator('h3', { hasText: 'When to Use' }) })
       const bullets = whenSection.locator('ul li')
       const count = await bullets.count()
       expect(count).toBeGreaterThan(0)
