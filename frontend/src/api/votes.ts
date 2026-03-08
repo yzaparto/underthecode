@@ -27,7 +27,11 @@ export async function getVotes(
 ): Promise<Record<string, VoteSummary>> {
   if (animationIds.length === 0) return {}
   const ids = animationIds.join(',')
-  const res = await fetch(`${API}/votes?animation_ids=${encodeURIComponent(ids)}`, fetchOpts)
-  if (!res.ok) return {}
-  return res.json()
+  try {
+    const res = await fetch(`${API}/votes?animation_ids=${encodeURIComponent(ids)}`, fetchOpts)
+    if (!res.ok) return {}
+    return res.json()
+  } catch {
+    return {}
+  }
 }

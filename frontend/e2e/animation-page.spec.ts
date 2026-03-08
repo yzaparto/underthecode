@@ -33,8 +33,8 @@ test.describe('Animation Page', () => {
       await expect(whyHeading).toBeVisible()
     })
 
-    test('displays When to Use This Pattern section', async ({ page }) => {
-      const whenHeading = page.locator('h2', { hasText: 'When to Use This Pattern' })
+    test('displays When to Use section', async ({ page }) => {
+      const whenHeading = page.locator('h3', { hasText: 'When to Use' })
       await expect(whenHeading).toBeVisible()
     })
 
