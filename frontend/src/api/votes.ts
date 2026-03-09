@@ -6,7 +6,16 @@ export interface VoteSummary {
   user_vote: 'up' | 'down' | null
 }
 
-const fetchOpts: RequestInit = { credentials: 'include' }
+const SESSION_KEY = 'vote_session'
+
+function getSessionId(): string {
+  let id = localStorage.getItem(SESSION_KEY)
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem(SESSION_KEY, id)
+  }
+  return id
+}
 
 export async function vote(
   animationId: string,
@@ -15,8 +24,11 @@ export async function vote(
   const res = await fetch(`${API}/votes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ animation_id: animationId, vote_type: voteType }),
+    body: JSON.stringify({
+      animation_id: animationId,
+      vote_type: voteType,
+      session_id: getSessionId(),
+    }),
   })
   if (!res.ok) throw new Error('Failed to vote')
   return res.json()
@@ -27,8 +39,11 @@ export async function getVotes(
 ): Promise<Record<string, VoteSummary>> {
   if (animationIds.length === 0) return {}
   const ids = animationIds.join(',')
+  const sid = getSessionId()
   try {
-    const res = await fetch(`${API}/votes?animation_ids=${encodeURIComponent(ids)}`, fetchOpts)
+    const res = await fetch(
+      `${API}/votes?animation_ids=${encodeURIComponent(ids)}&session_id=${encodeURIComponent(sid)}`
+    )
     if (!res.ok) return {}
     return res.json()
   } catch {

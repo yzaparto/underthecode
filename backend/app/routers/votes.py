@@ -1,54 +1,32 @@
-import uuid
 from typing import Optional
 
 from pydantic import BaseModel
-from fastapi import APIRouter, Cookie, Response, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.db import get_pool
 
 router = APIRouter()
 
-COOKIE_NAME = "vote_session"
-COOKIE_MAX_AGE = 365 * 24 * 60 * 60  # 1 year
-
 
 class VoteRequest(BaseModel):
     animation_id: str
     vote_type: str  # "up", "down", or "none" to remove vote
-
-
-def get_or_create_session(
-    vote_session: Optional[str],
-    response: Response,
-) -> str:
-    if vote_session:
-        return vote_session
-    session_id = str(uuid.uuid4())
-    response.set_cookie(
-        key=COOKIE_NAME,
-        value=session_id,
-        max_age=COOKIE_MAX_AGE,
-        httponly=True,
-        samesite="lax",
-        path="/",
-    )
-    return session_id
+    session_id: str
 
 
 @router.post("/votes")
-async def vote(
-    body: VoteRequest,
-    response: Response,
-    vote_session: Optional[str] = Cookie(default=None, alias=COOKIE_NAME),
-) -> dict:
+async def vote(body: VoteRequest) -> dict:
     animation_id = body.animation_id
     vote_type = body.vote_type
+    session_id = body.session_id
+
     if vote_type not in ("up", "down", "none"):
         raise HTTPException(400, "vote_type must be 'up', 'down', or 'none'")
     if not animation_id or "/" not in animation_id:
         raise HTTPException(400, "animation_id must be format 'series/index'")
+    if not session_id:
+        raise HTTPException(400, "session_id is required")
 
-    session_id = get_or_create_session(vote_session, response)
     pool = get_pool()
 
     async with pool.acquire() as conn:
@@ -74,7 +52,7 @@ async def vote(
 @router.get("/votes")
 async def get_votes(
     animation_ids: str,
-    vote_session: Optional[str] = Cookie(default=None, alias=COOKIE_NAME),
+    session_id: Optional[str] = Query(default=None),
 ) -> dict:
     ids = [x.strip() for x in animation_ids.split(",") if x.strip()]
     if not ids:
@@ -104,7 +82,7 @@ async def get_votes(
         if aid not in result:
             result[aid] = {"up": 0, "down": 0, "user_vote": None}
         result[aid][vtype] = result[aid].get(vtype, 0) + 1
-        if sid == vote_session:
+        if sid == session_id:
             result[aid]["user_vote"] = vtype
 
     return result
