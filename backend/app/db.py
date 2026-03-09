@@ -12,7 +12,13 @@ pool: asyncpg.Pool | None = None
 
 async def init_db() -> asyncpg.Pool:
     global pool
-    pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+    pool = await asyncpg.create_pool(
+        DATABASE_URL,
+        min_size=1,
+        max_size=5,
+        statement_cache_size=0,
+        ssl="require",
+    )
     async with pool.acquire() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS votes (
