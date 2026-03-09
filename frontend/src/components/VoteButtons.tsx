@@ -40,11 +40,32 @@ export function VoteButtons({ animationId, compact = false }: VoteButtonsProps) 
   async function handleVote(type: 'up' | 'down') {
     if (votingRef.current) return
     votingRef.current = true
+
+    const removing = data.user_vote === type
+    const switching = data.user_vote !== null && data.user_vote !== type
+    const apiType = removing ? 'none' : type
+
+    setData(prev => {
+      const next = { ...prev }
+      if (removing) {
+        next[type] = Math.max(0, next[type] - 1)
+        next.user_vote = null
+      } else {
+        if (switching && prev.user_vote) {
+          next[prev.user_vote] = Math.max(0, next[prev.user_vote] - 1)
+        }
+        next[type] = next[type] + 1
+        next.user_vote = type
+      }
+      return next
+    })
+
     try {
-      const apiType = data.user_vote === type ? 'none' : type
       await apiVote(animationId, apiType)
       await load()
-    } catch { /* ignore */ }
+    } catch {
+      await load()
+    }
     votingRef.current = false
   }
 
@@ -65,7 +86,8 @@ export function VoteButtons({ animationId, compact = false }: VoteButtonsProps) 
         >
           <ThumbUp className="h-4 w-4 text-green" />
         </button>
-        <span className="min-w-[1.5rem] text-center text-muted">{data.up - data.down}</span>
+        <span className="min-w-[1rem] text-center text-green">{data.up}</span>
+        <span className="h-3 w-px bg-border" />
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote('down') }}
@@ -77,6 +99,7 @@ export function VoteButtons({ animationId, compact = false }: VoteButtonsProps) 
         >
           <ThumbDown className="h-4 w-4 text-red" />
         </button>
+        <span className="min-w-[1rem] text-center text-red">{data.down}</span>
       </span>
     )
   }

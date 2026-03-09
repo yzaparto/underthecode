@@ -1,11 +1,10 @@
 import uuid
 from typing import Optional
 
-import aiosqlite
 from pydantic import BaseModel
 from fastapi import APIRouter, Cookie, Response, HTTPException
 
-from app.db import DB_PATH
+from app.db import get_pool
 
 router = APIRouter()
 
@@ -50,23 +49,24 @@ async def vote(
         raise HTTPException(400, "animation_id must be format 'series/index'")
 
     session_id = get_or_create_session(vote_session, response)
+    pool = get_pool()
 
-    async with aiosqlite.connect(DB_PATH) as db:
+    async with pool.acquire() as conn:
         if vote_type == "none":
-            await db.execute(
-                "DELETE FROM votes WHERE animation_id = ? AND session_id = ?",
-                (animation_id, session_id),
+            await conn.execute(
+                "DELETE FROM votes WHERE animation_id = $1 AND session_id = $2",
+                animation_id, session_id,
             )
         else:
-            await db.execute(
+            await conn.execute(
                 """
                 INSERT INTO votes (animation_id, session_id, vote_type)
-                VALUES (?, ?, ?)
-                ON CONFLICT (animation_id, session_id) DO UPDATE SET vote_type = excluded.vote_type
+                VALUES ($1, $2, $3)
+                ON CONFLICT (animation_id, session_id)
+                DO UPDATE SET vote_type = EXCLUDED.vote_type
                 """,
-                (animation_id, session_id, vote_type),
+                animation_id, session_id, vote_type,
             )
-        await db.commit()
 
     return {"ok": True, "animation_id": animation_id, "vote_type": vote_type}
 
@@ -80,18 +80,18 @@ async def get_votes(
     if not ids:
         return {}
 
-    placeholders = ",".join("?" * len(ids))
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(
+    pool = get_pool()
+
+    placeholders = ", ".join(f"${i+1}" for i in range(len(ids)))
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
             f"""
             SELECT animation_id, vote_type, session_id
             FROM votes
             WHERE animation_id IN ({placeholders})
             """,
-            ids,
+            *ids,
         )
-        rows = await cursor.fetchall()
 
     result: dict[str, dict] = {}
     for aid in ids:

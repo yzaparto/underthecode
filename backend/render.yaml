@@ -9,7 +9,5 @@ services:
         value: https://underthecode.com,https://www.underthecode.com
       - key: PYTHON_VERSION
         value: "3.12"
-    disk:
-      name: data
-      mountPath: /opt/render/project/src/backend/data
-      sizeGB: 1
+      - key: DATABASE_URL
+        sync: false
